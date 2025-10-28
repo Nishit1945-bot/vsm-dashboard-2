@@ -1,4 +1,5 @@
-* 08265b1 (HEAD -> fix/title-lean-vision-vsm) chore: ignore macOS .DS_Store files
+* ad486ea (HEAD -> fix/title-lean-vision-vsm) chore: add docs folder and initial git logs
+* 08265b1 chore: ignore macOS .DS_Store files
 * 21bc06b chore: test post-commit hook
 * 93612ee chore: test post-commit hook
 * d4aab92 (origin/fix/title-lean-vision-vsm) Set default title to 'Lean Vision-VSM' in metadata

@@ -1,3 +1,4 @@
+ad486ea | Nishit Acharya | 2025-10-28 | chore: add docs folder and initial git logs
 08265b1 | Nishit Acharya | 2025-10-28 | chore: ignore macOS .DS_Store files
 21bc06b | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
 93612ee | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
