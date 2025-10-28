@@ -1,4 +1,5 @@
-* ad486ea (HEAD -> fix/title-lean-vision-vsm) chore: add docs folder and initial git logs
+* eb3958d (HEAD -> fix/title-lean-vision-vsm) chore: update git log
+* ad486ea chore: add docs folder and initial git logs
 * 08265b1 chore: ignore macOS .DS_Store files
 * 21bc06b chore: test post-commit hook
 * 93612ee chore: test post-commit hook
