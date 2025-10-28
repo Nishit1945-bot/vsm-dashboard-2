@@ -1,0 +1,6 @@
+08265b1 | Nishit Acharya | 2025-10-28 | chore: ignore macOS .DS_Store files
+21bc06b | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+93612ee | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+d4aab92 | Nishit Acharya | 2025-10-28 | Set default title to 'Lean Vision-VSM' in metadata
+5d54c72 | Nishit acharya | 2025-10-18 | Initial commit
+3a654be | Nishit acharya | 2025-10-18 | Initial commit

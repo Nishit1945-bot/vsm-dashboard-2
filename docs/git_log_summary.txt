@@ -1,0 +1,6 @@
+* 08265b1 (HEAD -> fix/title-lean-vision-vsm) chore: ignore macOS .DS_Store files
+* 21bc06b chore: test post-commit hook
+* 93612ee chore: test post-commit hook
+* d4aab92 (origin/fix/title-lean-vision-vsm) Set default title to 'Lean Vision-VSM' in metadata
+* 5d54c72 (origin/main, main) Initial commit
+* 3a654be Initial commit
