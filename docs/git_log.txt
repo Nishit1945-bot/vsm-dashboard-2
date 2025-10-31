@@ -1,3 +1,4 @@
+2d41b56 | Nishit Acharya | 2025-10-31 | feat: add intent recognition and humanised project identification to chatbot
 b56a5c5 | Nishit Acharya | 2025-10-31 | chore: update git log
 715c811 | Nishit Acharya | 2025-10-31 | feat: add intent recognition and humanised project identification to chatbot
 bbb6fc1 | Nishit Acharya | 2025-10-28 | chore: update git log
