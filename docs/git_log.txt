@@ -1,3 +1,5 @@
+680730a | Nishit Acharya | 2025-10-31 | Merge: conclude pending merge (drop DS_Store and update .gitignore)
+6d33be7 | Nishit Acharya | 2025-10-31 | chore: update git log
 551e8f6 | Nishit Acharya | 2025-10-31 | wip: saving local edits before syncing with main
 62d71d7 | Nishit Acharya | 2025-10-31 | chore: update git log
 76acfdc | Nishit Acharya | 2025-10-31 | feat: add intent-based chatbot logic and new intent API
@@ -16,6 +18,7 @@ ad486ea | Nishit Acharya | 2025-10-28 | chore: add docs folder and initial git l
 08265b1 | Nishit Acharya | 2025-10-28 | chore: ignore macOS .DS_Store files
 21bc06b | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
 93612ee | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+bf0811c | Nishit Acharya | 2025-10-28 | Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
 d4aab92 | Nishit Acharya | 2025-10-28 | Set default title to 'Lean Vision-VSM' in metadata
 5d54c72 | Nishit acharya | 2025-10-18 | Initial commit
 3a654be | Nishit acharya | 2025-10-18 | Initial commit
