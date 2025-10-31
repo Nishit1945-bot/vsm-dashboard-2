@@ -1,4 +1,5 @@
-* 2926b29 (HEAD -> main) chore: update git log
+* 40335e7 (HEAD -> main) chore: fix app/api/intend route path
+* 2926b29 chore: update git log
 * 5ee91c3 Merge: conclude pending merge (drop DS_Store and update .gitignore)
 * eb82b50 chore: update git log
 *   680730a Merge: conclude pending merge (drop DS_Store and update .gitignore)
