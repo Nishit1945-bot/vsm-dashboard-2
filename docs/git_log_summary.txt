@@ -1,4 +1,6 @@
-* 008b856 (HEAD -> main) feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
+* fa04d67 (HEAD -> main) fix(api): rename intend␠ to intent; clean stray folder; update ignore
+* 05c654d (origin/main, origin/feat/vsm-guided, feat/vsm-guided) chore: update git log
+* 008b856 feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
 * 5ed2ced chore: update git log
 * 40335e7 chore: fix app/api/intend route path
 * 2926b29 chore: update git log
@@ -25,7 +27,7 @@
 | * 08265b1 chore: ignore macOS .DS_Store files
 | * 21bc06b chore: test post-commit hook
 | * 93612ee chore: test post-commit hook
-* | bf0811c (origin/main) Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
+* | bf0811c Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
 |\| 
 | * d4aab92 Set default title to 'Lean Vision-VSM' in metadata
 |/  
