@@ -1,6 +1,7 @@
-* c92de76 (HEAD -> main) chore: update git log
+* 4997c5a (HEAD -> main) restore intent route from HEAD and rename
+* c92de76 (origin/main) chore: update git log
 * fa04d67 fix(api): rename intend␠ to intent; clean stray folder; update ignore
-* 05c654d (origin/main, origin/feat/vsm-guided, feat/vsm-guided) chore: update git log
+* 05c654d (origin/feat/vsm-guided, feat/vsm-guided) chore: update git log
 * 008b856 feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
 * 5ed2ced chore: update git log
 * 40335e7 chore: fix app/api/intend route path
