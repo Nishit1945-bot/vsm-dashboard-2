@@ -93,14 +93,13 @@ Return JSON with shape:
 
     // Extract raw JSON text reliably from the Responses API.
     const textOut =
-      // @ts-ignore: allow flexible access to the unified output
-      resp.output_text ??
-      // Fallback for older shapes (defensive)
-      (resp.output &&
-        Array.isArray(resp.output) &&
-        resp.output[0]?.content?.[0]?.type === "output_text" &&
-        resp.output[0]?.content?.[0]?.text) ||
-      "";
+  // @ts-ignore: allow flexible access to the unified output
+  resp.output_text ??
+    ((resp.output &&
+      Array.isArray(resp.output) &&
+      resp.output[0]?.content?.[0]?.type === "output_text" &&
+      resp.output[0]?.content?.[0]?.text) ||
+    "");
 
     if (!textOut) {
       return json(
