@@ -1,4 +1,5 @@
-* d395512 (HEAD -> main) chore: update git log
+* bfc83d3 (HEAD -> main) Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
+* d395512 chore: update git log
 * daba4ec Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
 * b3b593f (origin/main) chore: update git log
 * b381a97 Hotfix: force client rendering for Supabase pages, remove cookie shim, and pin API routes to nodejs runtime

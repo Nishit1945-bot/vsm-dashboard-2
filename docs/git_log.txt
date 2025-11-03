@@ -1,3 +1,4 @@
+bfc83d3 | Nishit Acharya | 2025-11-03 | Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
 d395512 | Nishit Acharya | 2025-11-03 | chore: update git log
 daba4ec | Nishit Acharya | 2025-11-03 | Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
 b3b593f | Nishit Acharya | 2025-11-03 | chore: update git log
