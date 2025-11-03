@@ -1,6 +1,6 @@
 // app/api/intent/route.ts
 import { NextRequest } from "next/server";
-import OpenAI from "openai";
+
 
 // Use the Node runtime so we can call external APIs comfortably.
 export const runtime = "nodejs";
