@@ -1,4 +1,8 @@
-"use client"
+"use client";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 import type React from "react"
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
@@ -7,7 +11,7 @@ import type { User } from "@supabase/supabase-js"
 import { VSMGraph } from "@/components/vsm-graph"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-// 👇 NEW: import the intent result type (use the path you created)
+//  NEW: import the intent result type (use the path you created)
 import type { IntentResult } from "@/lib/nlu/intent-schema" // or "@/lib/utils"
 
 // -------------------- Utility helpers --------------------
