@@ -1,74 +1,66 @@
-import { streamText } from "ai";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { streamText } from "ai"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
 
-export const runtime = "nodejs";
+export const runtime = "nodejs"
 
-const systemPrompt = `You are an expert Value Stream Mapping (VSM) assistant for foundry operations.
-For now, no external model is connected. Reply with a simple acknowledgement if someone tries to chat.`;
+const systemPrompt = `You are an expert Value Stream Mapping (VSM) assistant for foundry operations. Your role is to:
 
-// ==============================
-//  POST Handler
-// ==============================
+1. Guide users through collecting VSM data by asking targeted questions
+2. Parse and validate their inputs for:
+   - Customer demand per day (units/day)
+   - Process steps (in sequential order)
+   - Cycle time (C/T) for each process in seconds
+   - Changeover time (C/O) for each process in seconds
+   - Uptime percentage for each process
+   - Work-in-progress (WIP) inventory between steps
+
+3. When users provide data:
+   - Extract numerical values and process names
+   - Validate completeness and consistency
+   - Ask for missing information
+   - Confirm understanding
+
+4. Be conversational but focused on gathering accurate VSM data
+5. If users upload files or provide bulk data, help them parse and validate it
+6. Always maintain a professional, helpful tone
+
+Remember: The goal is to collect complete, accurate data to generate a deterministic VSM diagram.`
+
 export async function POST(req: Request) {
   try {
-    const { messages, chatId, userId } = await req.json();
+    const { messages, chatId, userId } = await req.json()
 
-    // Ask for industry if this is a new chat
-    if (!messages || messages.length === 0) {
-      return new Response(
-        JSON.stringify({
-          messages: [
-            {
-              role: "assistant",
-              content: "Please tell me the type of industry you are working in.",
-            },
-          ],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // User authentication
     if (!userId) {
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Unauthorized", { status: 401 })
     }
 
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient()
 
-    // Verify ownership
-    const { data: chat } = await supabase
-      .from("chats")
-      .select("user_id")
-      .eq("id", chatId)
-      .single();
+    // Verify user owns this chat
+    const { data: chat } = await supabase.from("chats").select("user_id").eq("id", chatId).single()
 
     if (!chat || chat.user_id !== userId) {
-      return new Response("Forbidden", { status: 403 });
+      return new Response("Forbidden", { status: 403 })
     }
 
-    // Placeholder response (model removed)
-    const placeholderResponse = {
-      messages: [
-        {
-          role: "assistant",
-          content:
-            "The GPT model is currently disconnected. Your message was received successfully.",
-        },
-      ],
-    };
+    // Stream AI response
+    const result = streamText({
+      model: "openai/gpt-4o-mini",
+      system: systemPrompt,
+      messages: messages.map((m: any) => ({
+        role: m.role === "system" ? "assistant" : m.role,
+        content: m.text || m.content,
+      })),
+      temperature: 0.7,
+      maxTokens: 500,
+    })
 
-    return new Response(JSON.stringify(placeholderResponse), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return result.toDataStreamResponse()
   } catch (error: any) {
-    console.error("[Chat API Error]:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    console.error("[v0] Chat API error:", error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 }
