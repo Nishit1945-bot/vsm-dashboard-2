@@ -1,3 +1,4 @@
+b381a97 | Nishit Acharya | 2025-11-03 | Hotfix: force client rendering for Supabase pages, remove cookie shim, and pin API routes to nodejs runtime
 1176d21 | Nishit Acharya | 2025-11-03 | chore: update git log
 06ca780 | Nishit Acharya | 2025-11-03 | Move OpenAI initialization to runtime
 d9ace23 | Nishit Acharya | 2025-11-03 | chore: update git log
