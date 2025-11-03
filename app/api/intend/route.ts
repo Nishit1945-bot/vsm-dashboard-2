@@ -1,6 +1,6 @@
-// app/api/intent/route.ts
+// app/api/intend/route.ts
 import { NextRequest } from "next/server";
-
+import OpenAI from "openai";
 
 // Use the Node runtime so we can call external APIs comfortably.
 export const runtime = "nodejs";
@@ -80,10 +80,10 @@ Return JSON with shape:
 }
 `.trim();
 
-    // Ask GPT-4.1-mini to produce a JSON object (no extra text).
-    const resp = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: [
+    // Use the correct OpenAI Chat Completions API
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview", // or "gpt-4" or "gpt-3.5-turbo"
+      messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
@@ -91,15 +91,8 @@ Return JSON with shape:
       temperature: 0.2,
     });
 
-    // Extract raw JSON text reliably from the Responses API.
-    const textOut =
-  // @ts-ignore: allow flexible access to the unified output
-  resp.output_text ??
-    ((resp.output &&
-      Array.isArray(resp.output) &&
-      resp.output[0]?.content?.[0]?.type === "output_text" &&
-      resp.output[0]?.content?.[0]?.text) ||
-    "");
+    // Extract the response text
+    const textOut = completion.choices[0]?.message?.content;
 
     if (!textOut) {
       return json(
@@ -130,7 +123,7 @@ Return JSON with shape:
       const tooShort = pn.length < 2;
       const tooLong = pn.length > 80;
       const hasAlphaNum = /[A-Za-z0-9]/.test(pn);
-      const looksQuestion = /[?？！]$/.test(pn);
+      const looksQuestion = /[?？｡]$/.test(pn);
       const looksSentence =
         /(^\s*(please|can you|could you|show|tell|what|when|how|where|why)\b)/i.test(
           pn
