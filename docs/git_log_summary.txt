@@ -1,5 +1,7 @@
-* b381a97 (HEAD -> main) Hotfix: force client rendering for Supabase pages, remove cookie shim, and pin API routes to nodejs runtime
-* 1176d21 (origin/main) chore: update git log
+* daba4ec (HEAD -> main) Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
+* b3b593f (origin/main) chore: update git log
+* b381a97 Hotfix: force client rendering for Supabase pages, remove cookie shim, and pin API routes to nodejs runtime
+* 1176d21 chore: update git log
 * 06ca780 Move OpenAI initialization to runtime
 * d9ace23 chore: update git log
 * 111b654 Trigger redeploy with OpenAI key
