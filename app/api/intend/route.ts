@@ -5,11 +5,6 @@ import OpenAI from "openai";
 // Use the Node runtime so we can call external APIs comfortably.
 export const runtime = "nodejs";
 
-// If you prefer ENV var names differently, adjust here.
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // --- Types the client will consume (also exported in lib/nlu/intent-schema.ts later) ---
 type Intent =
   | "give_project_name"
@@ -43,6 +38,11 @@ export async function POST(req: NextRequest) {
         errorPayload("Server missing OPENAI_API_KEY; set it in your environment")
       );
     }
+
+    // Initialize OpenAI client here (runtime, not build time)
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // System: judge by criteria (no keyword lists). Ask for *JSON* back.
     const system = `
