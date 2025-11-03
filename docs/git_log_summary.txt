@@ -1,21 +1,53 @@
-* 551e8f6 (HEAD -> fix/title-lean-vision-vsm) wip: saving local edits before syncing with main
-* 62d71d7 chore: update git log
-* 76acfdc feat: add intent-based chatbot logic and new intent API
-* 81452a2 chore: update git log
-* e0b1da6 feat: add intent-based chatbot logic and new intent API
-* 72fb751 chore: update git log
-* 2d41b56 feat: add intent recognition and humanised project identification to chatbot
-* b56a5c5 chore: update git log
-* 715c811 feat: add intent recognition and humanised project identification to chatbot
-* bbb6fc1 chore: update git log
-* 7b181fe chore: test post-commit hook
-* ba11990 chore: update git log
-* 5048c89 chore: test post-commit hook
-* eb3958d chore: update git log
-* ad486ea chore: add docs folder and initial git logs
-* 08265b1 chore: ignore macOS .DS_Store files
-* 21bc06b chore: test post-commit hook
-* 93612ee chore: test post-commit hook
-* d4aab92 (origin/fix/title-lean-vision-vsm) Set default title to 'Lean Vision-VSM' in metadata
-* 5d54c72 (origin/main, main) Initial commit
+* 5420198 (HEAD -> main) Revert to last working deployment
+* f693ee5 (origin/main, test/remove-gpt4mini) chore: update git log
+* 308306c Commit all remaining changes
+* 3b1dc69 chore: update git log
+* c4b597a Update git log documentation
+* b0d02de (origin/test/remove-gpt4mini) chore: update git log
+* 53879ad chore(docs): update git log and summary
+* 3fd2c11 chore: update git log
+* ac4dbeb docs: update git logs
+* 79aab94 chore: update git log
+* 50ccc22 docs: update git logs
+* 69c63fc chore: update git log
+* d29c47d docs: update git log and gpt model
+* 0942f85 chore: update git log
+* 7174c97 chore: remove GPT-4o-mini & OpenAI SDK, add placeholder responses, keep industry-first prompt
+* 75fb425 chore: update git log
+* 4997c5a restore intent route from HEAD and rename
+* c92de76 chore: update git log
+* fa04d67 fix(api): rename intend␠ to intent; clean stray folder; update ignore
+* 05c654d (origin/feat/vsm-guided, feat/vsm-guided) chore: update git log
+* 008b856 feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
+* 5ed2ced chore: update git log
+* 40335e7 chore: fix app/api/intend route path
+* 2926b29 chore: update git log
+* 5ee91c3 Merge: conclude pending merge (drop DS_Store and update .gitignore)
+* eb82b50 chore: update git log
+*   680730a Merge: conclude pending merge (drop DS_Store and update .gitignore)
+|\  
+| * 6d33be7 (origin/fix/title-lean-vision-vsm, fix/title-lean-vision-vsm) chore: update git log
+| * 551e8f6 wip: saving local edits before syncing with main
+| * 62d71d7 chore: update git log
+| * 76acfdc feat: add intent-based chatbot logic and new intent API
+| * 81452a2 chore: update git log
+| * e0b1da6 feat: add intent-based chatbot logic and new intent API
+| * 72fb751 chore: update git log
+| * 2d41b56 feat: add intent recognition and humanised project identification to chatbot
+| * b56a5c5 chore: update git log
+| * 715c811 feat: add intent recognition and humanised project identification to chatbot
+| * bbb6fc1 chore: update git log
+| * 7b181fe chore: test post-commit hook
+| * ba11990 chore: update git log
+| * 5048c89 chore: test post-commit hook
+| * eb3958d chore: update git log
+| * ad486ea chore: add docs folder and initial git logs
+| * 08265b1 chore: ignore macOS .DS_Store files
+| * 21bc06b chore: test post-commit hook
+| * 93612ee chore: test post-commit hook
+* | bf0811c Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
+|\| 
+| * d4aab92 Set default title to 'Lean Vision-VSM' in metadata
+|/  
+* 5d54c72 Initial commit
 * 3a654be Initial commit

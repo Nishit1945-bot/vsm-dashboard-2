@@ -1,3 +1,31 @@
+5420198 | Nishit Acharya | 2025-11-03 | Revert to last working deployment
+f693ee5 | Nishit Acharya | 2025-11-03 | chore: update git log
+308306c | Nishit Acharya | 2025-11-03 | Commit all remaining changes
+3b1dc69 | Nishit Acharya | 2025-11-03 | chore: update git log
+c4b597a | Nishit Acharya | 2025-11-03 | Update git log documentation
+b0d02de | Nishit Acharya | 2025-11-03 | chore: update git log
+53879ad | Nishit Acharya | 2025-11-03 | chore(docs): update git log and summary
+3fd2c11 | Nishit Acharya | 2025-11-02 | chore: update git log
+ac4dbeb | Nishit Acharya | 2025-11-02 | docs: update git logs
+79aab94 | Nishit Acharya | 2025-11-02 | chore: update git log
+50ccc22 | Nishit Acharya | 2025-11-02 | docs: update git logs
+69c63fc | Nishit Acharya | 2025-11-02 | chore: update git log
+d29c47d | Nishit Acharya | 2025-11-02 | docs: update git log and gpt model
+0942f85 | Nishit Acharya | 2025-11-02 | chore: update git log
+7174c97 | Nishit Acharya | 2025-11-02 | chore: remove GPT-4o-mini & OpenAI SDK, add placeholder responses, keep industry-first prompt
+75fb425 | Nishit Acharya | 2025-11-02 | chore: update git log
+4997c5a | Nishit Acharya | 2025-11-02 | restore intent route from HEAD and rename
+c92de76 | Nishit Acharya | 2025-11-02 | chore: update git log
+fa04d67 | Nishit Acharya | 2025-11-02 | fix(api): rename intend␠ to intent; clean stray folder; update ignore
+05c654d | Nishit Acharya | 2025-10-31 | chore: update git log
+008b856 | Nishit Acharya | 2025-10-31 | feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
+5ed2ced | Nishit Acharya | 2025-10-31 | chore: update git log
+40335e7 | Nishit Acharya | 2025-10-31 | chore: fix app/api/intend route path
+2926b29 | Nishit Acharya | 2025-10-31 | chore: update git log
+5ee91c3 | Nishit Acharya | 2025-10-31 | Merge: conclude pending merge (drop DS_Store and update .gitignore)
+eb82b50 | Nishit Acharya | 2025-10-31 | chore: update git log
+680730a | Nishit Acharya | 2025-10-31 | Merge: conclude pending merge (drop DS_Store and update .gitignore)
+6d33be7 | Nishit Acharya | 2025-10-31 | chore: update git log
 551e8f6 | Nishit Acharya | 2025-10-31 | wip: saving local edits before syncing with main
 62d71d7 | Nishit Acharya | 2025-10-31 | chore: update git log
 76acfdc | Nishit Acharya | 2025-10-31 | feat: add intent-based chatbot logic and new intent API
@@ -16,6 +44,7 @@ ad486ea | Nishit Acharya | 2025-10-28 | chore: add docs folder and initial git l
 08265b1 | Nishit Acharya | 2025-10-28 | chore: ignore macOS .DS_Store files
 21bc06b | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
 93612ee | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+bf0811c | Nishit Acharya | 2025-10-28 | Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
 d4aab92 | Nishit Acharya | 2025-10-28 | Set default title to 'Lean Vision-VSM' in metadata
 5d54c72 | Nishit acharya | 2025-10-18 | Initial commit
 3a654be | Nishit acharya | 2025-10-18 | Initial commit
