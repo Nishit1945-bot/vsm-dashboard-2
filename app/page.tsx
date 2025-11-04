@@ -464,7 +464,7 @@ export default function Page() {
 
       // Check if it's a greeting
       if (lowerText.match(/^(hi|hello|hey|good morning|good afternoon|good evening|greetings)/)) {
-        setChat((c) => [...c, { role: "system", text: "Hello! What's the project today?" }])
+        setChat((c) => [...c, { role: "system", text: "Hello! What's the task today?" }])
         setConversationState("asking_project")
         setInputValue("")
         return
@@ -1225,7 +1225,7 @@ export default function Page() {
               </div>
 
               <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">What's the project today?</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">What's the task today?</h2>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault()
@@ -1238,7 +1238,7 @@ export default function Page() {
                   <input
                     name="projectName"
                     type="text"
-                    placeholder="Enter project name..."
+                    placeholder="Enter task name..."
                     required
                     autoFocus
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 text-lg"
@@ -1247,7 +1247,7 @@ export default function Page() {
                     type="submit"
                     className="w-full px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
                   >
-                    Start Project
+                    Start Task
                   </button>
                 </form>
               </div>
@@ -1293,47 +1293,197 @@ export default function Page() {
                   </div>
 
                   {activeTab === "chat" && (
-                    <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
-                      <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
-                        {chat.map((m, i) => (
-                          <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
-                            <div
-                              className={classNames(
-                                "px-3 py-2 rounded-2xl text-sm",
-                                m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
-                              )}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Left side: Chat interface */}
+                      <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
+                        <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
+                          {chat.map((m, i) => (
+                            <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
+                              <div
+                                className={classNames(
+                                  "px-3 py-2 rounded-2xl text-sm",
+                                  m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
+                                )}
+                              >
+                                {m.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t pt-3 mt-3">
+                          {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={inputValue}
+                              onChange={(e) => setInputValue(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
+                              placeholder="Type your answer or instruction..."
+                              className="flex-1 px-3 py-2 border rounded-xl"
+                            />
+                            <button
+                              onClick={() => handleUserMessage(inputValue)}
+                              className="px-3 py-2 bg-gray-900 text-white rounded-xl"
                             >
-                              {m.text}
+                              Send
+                            </button>
+                            <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
+                              Upload
+                              <input
+                                type="file"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => handleFiles(e.target.files)}
+                                accept=".csv,.xlsx,.xls,image/*,text/plain"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right side: VSM Data Entry Form */}
+                      <div className="border rounded-2xl bg-white p-4 shadow-sm h-[520px] overflow-auto">
+                        <h3 className="font-semibold text-lg mb-4">VSM Data Entry</h3>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Customer Demand (units/day)
+                            </label>
+                            <input
+                              type="number"
+                              value={
+                                dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
+                                  ? dataset.customerDemandPerDay
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
+                              }
+                              placeholder="e.g., 480"
+                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="block text-sm font-medium text-gray-700">Process Steps</label>
+                              <button
+                                onClick={() =>
+                                  setDataset({
+                                    ...dataset,
+                                    processes: [
+                                      ...dataset.processes,
+                                      {
+                                        id: `P${dataset.processes.length + 1}`,
+                                        name: `Process ${dataset.processes.length + 1}`,
+                                      },
+                                    ],
+                                  })
+                                }
+                                className="px-2 py-1 text-xs border rounded-lg hover:bg-gray-50"
+                              >
+                                + Add Process
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              {dataset.processes.map((p, i) => (
+                                <div key={p.id} className="border rounded-lg p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-700">Process {i + 1}</span>
+                                    <button
+                                      onClick={() =>
+                                        setDataset({
+                                          ...dataset,
+                                          processes: dataset.processes.filter((_, j) => j !== i),
+                                        })
+                                      }
+                                      className="text-xs text-red-600 hover:text-red-700"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+
+                                  <input
+                                    value={p.name}
+                                    onChange={(e) => updateProcess(i, { name: e.target.value })}
+                                    placeholder="Process name"
+                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                  />
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-xs text-gray-600">C/T (sec)</label>
+                                      <input
+                                        type="number"
+                                        value={
+                                          p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""
+                                        }
+                                        onChange={(e) =>
+                                          updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
+                                        }
+                                        placeholder="0"
+                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-600">C/O (sec)</label>
+                                      <input
+                                        type="number"
+                                        value={
+                                          p.changeoverSec !== undefined && p.changeoverSec !== null
+                                            ? p.changeoverSec
+                                            : ""
+                                        }
+                                        onChange={(e) =>
+                                          updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
+                                        }
+                                        placeholder="0"
+                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-600">Uptime %</label>
+                                      <input
+                                        type="number"
+                                        value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
+                                        onChange={(e) =>
+                                          updateProcess(i, { uptimePct: Number(e.target.value) || undefined })
+                                        }
+                                        placeholder="100"
+                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-600">WIP (units)</label>
+                                      <input
+                                        type="number"
+                                        value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
+                                        onChange={(e) =>
+                                          updateProcess(i, { wipUnits: Number(e.target.value) || undefined })
+                                        }
+                                        placeholder="0"
+                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {dataset.processes.length === 0 && (
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                  No processes added yet. Click "+ Add Process" to start.
+                                </div>
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                      <div className="border-t pt-3 mt-3">
-                        {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
-                            placeholder="Type your answer or instruction..."
-                            className="flex-1 px-3 py-2 border rounded-xl"
-                          />
+
                           <button
-                            onClick={() => handleUserMessage(inputValue)}
-                            className="px-3 py-2 bg-gray-900 text-white rounded-xl"
+                            onClick={() => setActiveTab("preview")}
+                            className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
                           >
-                            Send
+                            Generate VSM Preview
                           </button>
-                          <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
-                            Upload
-                            <input
-                              type="file"
-                              multiple
-                              className="hidden"
-                              onChange={(e) => handleFiles(e.target.files)}
-                              accept=".csv,.xlsx,.xls,image/*,text/plain"
-                            />
-                          </label>
                         </div>
                       </div>
                     </div>
