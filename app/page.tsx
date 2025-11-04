@@ -683,8 +683,11 @@ export default function Page() {
     const src = serializer.serializeToString(svgEl)
     const svg64 = btoa(unescape(encodeURIComponent(src)))
     const img = new Image()
-    const w = svgEl.viewBox.baseVal.width || svgEl.clientWidth || 1200
-    const h = svgEl.viewBox.baseVal.height || svgEl.clientHeight || 600
+
+    const viewBox = svgEl.viewBox?.baseVal
+    const w = viewBox?.width || svgEl.clientWidth || 1200
+    const h = viewBox?.height || svgEl.clientHeight || 600
+
     const canvas = document.createElement("canvas")
     canvas.width = w
     canvas.height = h
@@ -693,6 +696,32 @@ export default function Page() {
     img.onload = () => {
       ctx.drawImage(img, 0, 0)
       canvas.toBlob((blob) => blob && download("vsm.png", blob))
+    }
+    img.src = `data:image/svg+xml;base64,${svg64}`
+  }
+
+  async function exportJPG() {
+    if (!svgRef.current) return
+    const svgEl = svgRef.current
+    const serializer = new XMLSerializer()
+    const src = serializer.serializeToString(svgEl)
+    const svg64 = btoa(unescape(encodeURIComponent(src)))
+    const img = new Image()
+
+    const viewBox = svgEl.viewBox?.baseVal
+    const w = viewBox?.width || svgEl.clientWidth || 1200
+    const h = viewBox?.height || svgEl.clientHeight || 600
+
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    img.onload = () => {
+      ctx.fillStyle = "white"
+      ctx.fillRect(0, 0, w, h)
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => blob && download("vsm.jpg", blob), "image/jpeg", 0.95)
     }
     img.src = `data:image/svg+xml;base64,${svg64}`
   }
@@ -743,7 +772,8 @@ export default function Page() {
     setDataset({ processes: [] })
     setCurrentProjectName("")
     setConversationState("asking_project")
-    setShowProjectInput(true)
+    setShowProjectInput(true) // Show project input screen
+    setActiveTab("chat") // Reset to chat tab
 
     if (!useSupabase || !user) {
       localStorage.removeItem("vsm_chat")
@@ -1245,8 +1275,8 @@ export default function Page() {
             </header>
 
             <main className="p-6">
-              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <section className="lg:col-span-2 flex flex-col gap-4">
+              <div className="max-w-7xl mx-auto">
+                <section className="flex flex-col gap-4">
                   <div className="flex items-center gap-2">
                     {(["chat", "data", "preview"] as const).map((t) => (
                       <button
@@ -1454,103 +1484,68 @@ export default function Page() {
 
                   {activeTab === "preview" && (
                     <div className="space-y-3">
-                      <div className="border rounded-2xl bg-white p-4 shadow-sm overflow-auto">
-                        <VSMGraph ref={svgRef} dataset={dataset} width={1200} height={600} />
+                      <div className="border rounded-2xl bg-white shadow-sm">
+                        <div className="relative">
+                          <div className="overflow-x-auto overflow-y-hidden p-4" id="vsm-scroll-container">
+                            <VSMGraph
+                              ref={svgRef}
+                              dataset={dataset}
+                              width={Math.max(1400, dataset.processes.length * 250)}
+                              height={900}
+                            />
+                          </div>
+                          {/* Scroll navigation buttons */}
+                          {dataset.processes.length > 5 && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  const container = document.getElementById("vsm-scroll-container")
+                                  if (container) container.scrollLeft -= 300
+                                }}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
+                              >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 19l-7-7 7-7"
+                                  />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const container = document.getElementById("vsm-scroll-container")
+                                  if (container) container.scrollLeft += 300
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
+                              >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={exportSVG} className="px-3 py-2 border rounded-xl text-sm">
-                          Export SVG
-                        </button>
-                        <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm">
+                        <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
                           Export PNG
                         </button>
-                        <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
+                        <button onClick={exportJPG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
+                          Export JPG
+                        </button>
+                        <button
+                          onClick={exportTableCSV}
+                          className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50"
+                        >
                           Export CSV
                         </button>
                       </div>
                     </div>
                   )}
                 </section>
-
-                <aside className="lg:col-span-1 space-y-4">
-                  <div className="border rounded-2xl bg-white p-4 shadow-sm">
-                    <div className="font-semibold mb-3">Project Information</div>
-                    {currentProjectName && (
-                      <div className="mb-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-600">Project Name</div>
-                        <div className="font-medium">{currentProjectName}</div>
-                      </div>
-                    )}
-                    <div className="space-y-2 text-sm">
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.customerDemandPerDay ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">Customer Demand</div>
-                        <div className="font-medium">
-                          {dataset.customerDemandPerDay ? `${dataset.customerDemandPerDay} units/day` : "Not provided"}
-                        </div>
-                      </div>
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.processes.length > 0 ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">Process Steps</div>
-                        <div className="font-medium">
-                          {dataset.processes.length > 0 ? `${dataset.processes.length} steps` : "Not provided"}
-                        </div>
-                      </div>
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.processes.some((p) => p.cycleTimeSec != null) ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">Cycle Times</div>
-                        <div className="font-medium">
-                          {dataset.processes.some((p) => p.cycleTimeSec != null) ? "Provided" : "Not provided"}
-                        </div>
-                      </div>
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.processes.some((p) => p.changeoverSec != null) ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">Changeover Times</div>
-                        <div className="font-medium">
-                          {dataset.processes.some((p) => p.changeoverSec != null) ? "Provided" : "Not provided"}
-                        </div>
-                      </div>
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.processes.some((p) => p.uptimePct != null) ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">Uptime %</div>
-                        <div className="font-medium">
-                          {dataset.processes.some((p) => p.uptimePct != null) ? "Provided" : "Not provided"}
-                        </div>
-                      </div>
-                      <div
-                        className={classNames(
-                          "p-2 rounded-lg",
-                          dataset.processes.some((p) => p.wipUnits != null) ? "bg-green-50" : "bg-gray-50",
-                        )}
-                      >
-                        <div className="text-xs text-gray-600">WIP Values</div>
-                        <div className="font-medium">
-                          {dataset.processes.some((p) => p.wipUnits != null) ? "Provided" : "Not provided"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
+                {/* Removed aside section as content is now full width */}
               </div>
             </main>
           </>
@@ -1868,12 +1863,6 @@ export default function Page() {
           </div>
         </div>
       )}
-
-      <footer className="border-t mt-8">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-xs text-gray-500">
-          © {new Date().getFullYear()} VSM Dashboard. {useSupabase ? "Cloud-enabled" : "Local mode"} with AI assistance.
-        </div>
-      </footer>
     </div>
   )
 }
