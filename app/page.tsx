@@ -177,8 +177,10 @@ export default function Page() {
   const [conversationState, setConversationState] = useState<"greeting" | "asking_project" | "collecting_data">(
     "greeting",
   )
+  const [showProjectInput, setShowProjectInput] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  const supabase = getSupabaseBrowserClient()
+  // const supabase = getSupabaseBrowserClient()
   const router = useRouter()
 
   useEffect(() => {
@@ -189,6 +191,8 @@ export default function Page() {
 
   useEffect(() => {
     async function loadUserAndData() {
+      let supabase: ReturnType<typeof getSupabaseBrowserClient> | null = null
+
       try {
         const supabaseConfigured = isSupabaseConfigured()
         setUseSupabase(supabaseConfigured)
@@ -214,6 +218,14 @@ export default function Page() {
             }
           }
 
+          setLoading(false)
+          return
+        }
+
+        supabase = getSupabaseBrowserClient()
+        if (!supabase) {
+          console.log("[v0] Failed to create Supabase client, falling back to localStorage mode")
+          setUseSupabase(false)
           setLoading(false)
           return
         }
@@ -312,6 +324,7 @@ export default function Page() {
         }
       } catch (error) {
         console.error("[v0] Error loading user data:", error)
+        setUseSupabase(false)
       } finally {
         setLoading(false)
       }
@@ -320,18 +333,21 @@ export default function Page() {
     loadUserAndData()
 
     if (isSupabaseConfigured()) {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null)
-        if (!session?.user) {
-          setShowLogin(true)
-        }
-      })
+      const supabase = getSupabaseBrowserClient()
+      if (supabase) {
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? null)
+          if (!session?.user) {
+            setShowLogin(true)
+          }
+        })
 
-      return () => subscription.unsubscribe()
+        return () => subscription.unsubscribe()
+      }
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (!useSupabase && chat.length > 0) {
@@ -348,6 +364,9 @@ export default function Page() {
   useEffect(() => {
     async function saveMessages() {
       if (!useSupabase || !user || !currentChatId || chat.length === 0) return
+
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
 
       try {
         const { data: existingMessages } = await supabase.from("messages").select("id").eq("chat_id", currentChatId)
@@ -371,11 +390,14 @@ export default function Page() {
     }
 
     saveMessages()
-  }, [chat, user, currentChatId, supabase, useSupabase])
+  }, [chat, user, currentChatId, useSupabase])
 
   useEffect(() => {
     async function saveDataset() {
       if (!useSupabase || !user || !currentChatId || dataset.processes.length === 0) return
+
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) return
 
       try {
         const { data: existing } = await supabase
@@ -403,16 +425,11 @@ export default function Page() {
     }
 
     saveDataset()
-  }, [dataset, user, currentChatId, supabase, useSupabase])
+  }, [dataset, user, currentChatId, useSupabase])
 
   useEffect(() => {
     if (chat.length === 0 && !loading) {
-      setChat([
-        {
-          role: "system",
-          text: "What's the project today?",
-        },
-      ])
+      setShowProjectInput(true)
       setConversationState("asking_project")
     }
   }, [chat.length, loading])
@@ -454,25 +471,7 @@ export default function Page() {
       }
 
       // Assume the response is the project name
-      setCurrentProjectName(text)
-
-      // Update chat title and project name in database
-      if (useSupabase && currentChatId) {
-        await supabase.from("chats").update({ title: text, project_name: text }).eq("id", currentChatId)
-      }
-
-      setChat((c) => [
-        ...c,
-        {
-          role: "system",
-          text: `Great! Let's create a Value Stream Mapping for "${text}". I'll need some information to generate the diagram. You can provide details naturally, and I'll fill in the form on the right as we go.`,
-        },
-        {
-          role: "system",
-          text: "Let's start with: What is the customer demand per day (in units)?",
-        },
-      ])
-      setConversationState("collecting_data")
+      await handleProjectNameSubmit(text)
       setInputValue("")
       return
     }
@@ -711,20 +710,51 @@ export default function Page() {
     downloadText("vsm_table.csv", csv)
   }
 
+  async function handleProjectNameSubmit(projectName: string) {
+    if (!projectName.trim()) return
+
+    setCurrentProjectName(projectName)
+    setShowProjectInput(false)
+
+    // Update chat title and project name in database
+    if (useSupabase && currentChatId) {
+      const supabase = getSupabaseBrowserClient()
+      if (supabase) {
+        await supabase.from("chats").update({ title: projectName, project_name: projectName }).eq("id", currentChatId)
+      }
+    }
+
+    setChat([
+      {
+        role: "system",
+        text: `Great! Let's create a Value Stream Mapping for "${projectName}". I'll need some information to generate the diagram.`,
+      },
+      {
+        role: "system",
+        text: "Let's start with: What is the customer demand per day (in units)?",
+      },
+    ])
+    setConversationState("collecting_data")
+  }
+
   async function handleNewChat() {
     // Clear current state
     setChat([])
     setDataset({ processes: [] })
     setCurrentProjectName("")
     setConversationState("asking_project")
+    setShowProjectInput(true)
 
     if (!useSupabase || !user) {
       localStorage.removeItem("vsm_chat")
       localStorage.removeItem("vsm_dataset")
       setCurrentChatId(null)
+      return
+    }
 
-      // Set initial message immediately
-      setChat([{ role: "system", text: "What's the project today?" }])
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) {
+      console.error("[v0] Supabase client not available")
       return
     }
 
@@ -749,9 +779,6 @@ export default function Page() {
       if (newChat) {
         setCurrentChatId(newChat.id)
 
-        // Set initial message immediately
-        setChat([{ role: "system", text: "What's the project today?" }])
-
         // Refresh previous chats list
         const { data: allChats } = await supabase
           .from("chats")
@@ -772,6 +799,9 @@ export default function Page() {
   async function loadPreviousChat(chatId: string) {
     if (!useSupabase || !user) return
 
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) return
+
     try {
       setCurrentChatId(chatId)
 
@@ -780,6 +810,9 @@ export default function Page() {
 
       if (chatData) {
         setCurrentProjectName(chatData.project_name || "")
+        if (chatData.project_name) {
+          setShowProjectInput(false)
+        }
       }
 
       const { data: messages } = await supabase
@@ -793,7 +826,8 @@ export default function Page() {
         setConversationState("collecting_data")
       } else {
         setChat([])
-        setConversationState("greeting")
+        setConversationState("asking_project")
+        setShowProjectInput(true)
       }
 
       const { data: datasets } = await supabase
@@ -822,6 +856,9 @@ export default function Page() {
     e.preventDefault()
 
     if (!useSupabase) return
+
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) return
 
     const form = e.target as HTMLFormElement
     const formData = new FormData(form)
@@ -855,6 +892,12 @@ export default function Page() {
 
     if (!useSupabase) {
       setShowLogin(false)
+      return
+    }
+
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) {
+      console.error("[v0] Supabase client not available")
       return
     }
 
@@ -954,9 +997,19 @@ export default function Page() {
     }
   }
 
+  function handleSkipLogin() {
+    setShowLogin(false)
+    setUseSupabase(false)
+    setUser(null)
+    console.log("[v0] Skipped login - using local mode")
+  }
+
   async function handleSignOut() {
     if (useSupabase) {
-      await supabase.auth.signOut()
+      const supabase = getSupabaseBrowserClient()
+      if (supabase) {
+        await supabase.auth.signOut()
+      }
     }
     setUser(null)
     setChat([])
@@ -985,60 +1038,124 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Lean Vision Logo" width={56} height={56} className="rounded-xl" />
-            <div>
-              <div className="text-lg font-semibold">Lean Vision-VSM</div>
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex">
+      <aside
+        className={classNames(
+          "fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 z-20",
+          sidebarOpen ? "w-64" : "w-0",
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo and brand */}
+          <div className="p-4 border-b border-gray-700 flex items-center gap-3">
+            <Image src="/logo.png" alt="Lean Vision Logo" width={40} height={40} className="rounded-lg" />
+            <div className="flex-1">
+              <div className="font-semibold text-sm">Lean Vision</div>
+              <div className="text-xs text-gray-400">Gen-AI-VSM</div>
             </div>
+            <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-gray-800 rounded-lg lg:hidden">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <div className="flex items-center gap-3">
-            {user && useSupabase && (
-              <>
-                <button
-                  onClick={handleNewChat}
-                  className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  New Chat
-                </button>
-                <button
-                  onClick={() => setShowPreviousChats(!showPreviousChats)}
-                  className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                    />
-                  </svg>
-                  Previous Chats
-                </button>
-              </>
-            )}
-            <span className="text-sm font-medium text-gray-700">
-              {useSupabase
-                ? user
-                  ? userProfile?.full_name || user.email?.split("@")[0] || "User"
-                  : "Not signed in"
-                : "Local mode"}
-            </span>
+
+          {/* Navigation items */}
+          <div className="flex-1 overflow-auto p-4 space-y-2">
+            <button
+              onClick={handleNewChat}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="text-sm font-medium">New Chat</span>
+            </button>
+
+            <button
+              onClick={() => setShowPreviousChats(!showPreviousChats)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Previous Chats</span>
+            </button>
+
+            <div className="border-t border-gray-700 my-4" />
+
+            <button
+              onClick={handleNewChat}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Create New Project</span>
+            </button>
+
+            <button
+              onClick={() => setShowPreviousChats(!showPreviousChats)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Previous Projects</span>
+            </button>
+          </div>
+
+          {/* User info at bottom */}
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                <span className="text-sm font-medium">
+                  {useSupabase
+                    ? user
+                      ? (userProfile?.full_name || user.email?.split("@")[0] || "U")[0].toUpperCase()
+                      : "?"
+                    : "L"}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">
+                  {useSupabase
+                    ? user
+                      ? userProfile?.full_name || user.email?.split("@")[0] || "User"
+                      : "Not signed in"
+                    : "Local mode"}
+                </div>
+                {user && <div className="text-xs text-gray-400 truncate">{user.email}</div>}
+              </div>
+            </div>
             {useSupabase && (
               <>
                 {user ? (
-                  <button onClick={handleSignOut} className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-700 text-sm hover:bg-gray-800 transition-colors"
+                  >
                     Sign out
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowLogin(true)}
-                    className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-700 text-sm hover:bg-gray-800 transition-colors"
                   >
                     Sign in
                   </button>
@@ -1047,316 +1164,398 @@ export default function Page() {
             )}
           </div>
         </div>
-      </header>
+      </aside>
 
-      {showPreviousChats && user && useSupabase && (
-        <div className="fixed top-16 right-4 z-20 w-80 bg-white border rounded-xl shadow-lg max-h-96 overflow-auto">
-          <div className="p-4 border-b font-semibold">Previous Chats</div>
-          <div className="divide-y">
-            {previousChats.length === 0 ? (
-              <div className="p-4 text-sm text-gray-500">No previous chats</div>
-            ) : (
-              previousChats.map((chat) => (
-                <button
-                  key={chat.id}
-                  onClick={() => loadPreviousChat(chat.id)}
-                  className={classNames(
-                    "w-full text-left p-4 hover:bg-gray-50 transition-colors",
-                    currentChatId === chat.id ? "bg-gray-100" : "",
-                  )}
+      <div className={classNames("flex-1 transition-all duration-300", sidebarOpen ? "lg:ml-64" : "ml-0")}>
+        {/* Mobile sidebar toggle */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-4 left-4 z-10 p-2 bg-gray-900 text-white rounded-lg shadow-lg lg:hidden"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
+
+        {showProjectInput ? (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+              <div className="text-center mb-8">
+                <Image
+                  src="/logo.png"
+                  alt="Lean Vision Logo"
+                  width={80}
+                  height={80}
+                  className="mx-auto mb-4 rounded-xl"
+                />
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome to Lean Vision</h1>
+                <p className="text-lg text-gray-600">The Gen-AI-VSM</p>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">What's the project today?</h2>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const formData = new FormData(e.currentTarget)
+                    const projectName = String(formData.get("projectName") || "").trim()
+                    handleProjectNameSubmit(projectName)
+                  }}
+                  className="space-y-4"
                 >
-                  <div className="font-medium text-sm">{chat.project_name || chat.title}</div>
-                  <div className="text-xs text-gray-500 mt-1">{new Date(chat.updated_at).toLocaleString()}</div>
-                </button>
-              ))
-            )}
+                  <input
+                    name="projectName"
+                    type="text"
+                    placeholder="Enter project name..."
+                    required
+                    autoFocus
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 text-lg"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Start Project
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
+              <div className="px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="p-2 hover:bg-gray-100 rounded-lg hidden lg:block"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                  <div>
+                    <div className="text-lg font-semibold text-gray-900">{currentProjectName}</div>
+                    <div className="text-xs text-gray-500">Value Stream Mapping</div>
+                  </div>
+                </div>
+              </div>
+            </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            {(["chat", "data", "preview"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                className={classNames(
-                  "px-3 py-2 rounded-xl text-sm border",
-                  activeTab === t ? "bg-gray-900 text-white" : "bg-white",
-                )}
-              >
-                {t === "chat" ? "Chat" : t === "data" ? "Data" : "Preview"}
-              </button>
-            ))}
-          </div>
+            <main className="p-6">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <section className="lg:col-span-2 flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    {(["chat", "data", "preview"] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setActiveTab(t)}
+                        className={classNames(
+                          "px-3 py-2 rounded-xl text-sm border",
+                          activeTab === t ? "bg-gray-900 text-white" : "bg-white",
+                        )}
+                      >
+                        {t === "chat" ? "Chat" : t === "data" ? "Data" : "Preview"}
+                      </button>
+                    ))}
+                  </div>
 
-          {activeTab === "chat" && (
-            <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
-              <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
-                {chat.map((m, i) => (
-                  <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
-                    <div
-                      className={classNames(
-                        "px-3 py-2 rounded-2xl text-sm",
-                        m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
-                      )}
-                    >
-                      {m.text}
+                  {activeTab === "chat" && (
+                    <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
+                      <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
+                        {chat.map((m, i) => (
+                          <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
+                            <div
+                              className={classNames(
+                                "px-3 py-2 rounded-2xl text-sm",
+                                m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
+                              )}
+                            >
+                              {m.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t pt-3 mt-3">
+                        {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
+                            placeholder="Type your answer or instruction..."
+                            className="flex-1 px-3 py-2 border rounded-xl"
+                          />
+                          <button
+                            onClick={() => handleUserMessage(inputValue)}
+                            className="px-3 py-2 bg-gray-900 text-white rounded-xl"
+                          >
+                            Send
+                          </button>
+                          <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
+                            Upload
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleFiles(e.target.files)}
+                              accept=".csv,.xlsx,.xls,image/*,text/plain"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "data" && (
+                    <div className="border rounded-2xl bg-white p-4 shadow-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs text-gray-600">Customer demand (units/day)</label>
+                          <input
+                            type="number"
+                            value={
+                              dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
+                                ? dataset.customerDemandPerDay
+                                : ""
+                            }
+                            onChange={(e) =>
+                              setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
+                            }
+                            className="mt-1 w-full px-3 py-2 border rounded-xl"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-semibold">Processes</div>
+                          <button
+                            onClick={() =>
+                              setDataset({
+                                ...dataset,
+                                processes: [
+                                  ...dataset.processes,
+                                  {
+                                    id: `P${dataset.processes.length + 1}`,
+                                    name: `Process ${dataset.processes.length + 1}`,
+                                  },
+                                ],
+                              })
+                            }
+                            className="px-3 py-1.5 border rounded-xl text-sm"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="overflow-auto">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="text-left text-gray-600">
+                                <th className="p-2">#</th>
+                                <th className="p-2">Name</th>
+                                <th className="p-2">C/T (s)</th>
+                                <th className="p-2">C/O (s)</th>
+                                <th className="p-2">Uptime (%)</th>
+                                <th className="p-2">WIP (units)</th>
+                                <th className="p-2" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dataset.processes.map((p, i) => (
+                                <tr key={p.id} className="border-t">
+                                  <td className="p-2">{i + 1}</td>
+                                  <td className="p-2">
+                                    <input
+                                      value={p.name}
+                                      onChange={(e) => updateProcess(i, { name: e.target.value })}
+                                      className="w-48 px-2 py-1 border rounded-lg"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <input
+                                      type="number"
+                                      value={
+                                        p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""
+                                      }
+                                      onChange={(e) =>
+                                        updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
+                                      }
+                                      className="w-28 px-2 py-1 border rounded-lg"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <input
+                                      type="number"
+                                      value={
+                                        p.changeoverSec !== undefined && p.changeoverSec !== null ? p.changeoverSec : ""
+                                      }
+                                      onChange={(e) =>
+                                        updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
+                                      }
+                                      className="w-28 px-2 py-1 border rounded-lg"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <input
+                                      type="number"
+                                      value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
+                                      onChange={(e) =>
+                                        updateProcess(i, { uptimePct: Number(e.target.value) || undefined })
+                                      }
+                                      className="w-28 px-2 py-1 border rounded-lg"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <input
+                                      type="number"
+                                      value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
+                                      onChange={(e) =>
+                                        updateProcess(i, { wipUnits: Number(e.target.value) || undefined })
+                                      }
+                                      className="w-28 px-2 py-1 border rounded-lg"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <button
+                                      onClick={() =>
+                                        setDataset({
+                                          ...dataset,
+                                          processes: dataset.processes.filter((_, j) => j !== i),
+                                        })
+                                      }
+                                      className="px-2 py-1 border rounded-lg text-xs"
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-2">
+                        <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
+                          Export Table CSV
+                        </button>
+                        <button
+                          onClick={() => setActiveTab("preview")}
+                          className="px-3 py-2 bg-gray-900 text-white rounded-xl text-sm"
+                        >
+                          Go to Preview
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "preview" && (
+                    <div className="space-y-3">
+                      <div className="border rounded-2xl bg-white p-4 shadow-sm overflow-auto">
+                        <VSMGraph ref={svgRef} dataset={dataset} width={1200} height={600} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={exportSVG} className="px-3 py-2 border rounded-xl text-sm">
+                          Export SVG
+                        </button>
+                        <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm">
+                          Export PNG
+                        </button>
+                        <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
+                          Export CSV
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <aside className="lg:col-span-1 space-y-4">
+                  <div className="border rounded-2xl bg-white p-4 shadow-sm">
+                    <div className="font-semibold mb-3">Project Information</div>
+                    {currentProjectName && (
+                      <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-600">Project Name</div>
+                        <div className="font-medium">{currentProjectName}</div>
+                      </div>
+                    )}
+                    <div className="space-y-2 text-sm">
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.customerDemandPerDay ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">Customer Demand</div>
+                        <div className="font-medium">
+                          {dataset.customerDemandPerDay ? `${dataset.customerDemandPerDay} units/day` : "Not provided"}
+                        </div>
+                      </div>
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.processes.length > 0 ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">Process Steps</div>
+                        <div className="font-medium">
+                          {dataset.processes.length > 0 ? `${dataset.processes.length} steps` : "Not provided"}
+                        </div>
+                      </div>
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.processes.some((p) => p.cycleTimeSec != null) ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">Cycle Times</div>
+                        <div className="font-medium">
+                          {dataset.processes.some((p) => p.cycleTimeSec != null) ? "Provided" : "Not provided"}
+                        </div>
+                      </div>
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.processes.some((p) => p.changeoverSec != null) ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">Changeover Times</div>
+                        <div className="font-medium">
+                          {dataset.processes.some((p) => p.changeoverSec != null) ? "Provided" : "Not provided"}
+                        </div>
+                      </div>
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.processes.some((p) => p.uptimePct != null) ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">Uptime %</div>
+                        <div className="font-medium">
+                          {dataset.processes.some((p) => p.uptimePct != null) ? "Provided" : "Not provided"}
+                        </div>
+                      </div>
+                      <div
+                        className={classNames(
+                          "p-2 rounded-lg",
+                          dataset.processes.some((p) => p.wipUnits != null) ? "bg-green-50" : "bg-gray-50",
+                        )}
+                      >
+                        <div className="text-xs text-gray-600">WIP Values</div>
+                        <div className="font-medium">
+                          {dataset.processes.some((p) => p.wipUnits != null) ? "Provided" : "Not provided"}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </aside>
               </div>
-              <div className="border-t pt-3 mt-3">
-                {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
-                <div className="flex items-center gap-2">
-                  <input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
-                    placeholder="Type your answer or instruction..."
-                    className="flex-1 px-3 py-2 border rounded-xl"
-                  />
-                  <button
-                    onClick={() => handleUserMessage(inputValue)}
-                    className="px-3 py-2 bg-gray-900 text-white rounded-xl"
-                  >
-                    Send
-                  </button>
-                  <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
-                    Upload
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFiles(e.target.files)}
-                      accept=".csv,.xlsx,.xls,image/*,text/plain"
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "data" && (
-            <div className="border rounded-2xl bg-white p-4 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-xs text-gray-600">Customer demand (units/day)</label>
-                  <input
-                    type="number"
-                    value={
-                      dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
-                        ? dataset.customerDemandPerDay
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
-                    }
-                    className="mt-1 w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-semibold">Processes</div>
-                  <button
-                    onClick={() =>
-                      setDataset({
-                        ...dataset,
-                        processes: [
-                          ...dataset.processes,
-                          { id: `P${dataset.processes.length + 1}`, name: `Process ${dataset.processes.length + 1}` },
-                        ],
-                      })
-                    }
-                    className="px-3 py-1.5 border rounded-xl text-sm"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div className="overflow-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-600">
-                        <th className="p-2">#</th>
-                        <th className="p-2">Name</th>
-                        <th className="p-2">C/T (s)</th>
-                        <th className="p-2">C/O (s)</th>
-                        <th className="p-2">Uptime (%)</th>
-                        <th className="p-2">WIP (units)</th>
-                        <th className="p-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dataset.processes.map((p, i) => (
-                        <tr key={p.id} className="border-t">
-                          <td className="p-2">{i + 1}</td>
-                          <td className="p-2">
-                            <input
-                              value={p.name}
-                              onChange={(e) => updateProcess(i, { name: e.target.value })}
-                              className="w-48 px-2 py-1 border rounded-lg"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""}
-                              onChange={(e) => updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })}
-                              className="w-28 px-2 py-1 border rounded-lg"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={p.changeoverSec !== undefined && p.changeoverSec !== null ? p.changeoverSec : ""}
-                              onChange={(e) => updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })}
-                              className="w-28 px-2 py-1 border rounded-lg"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
-                              onChange={(e) => updateProcess(i, { uptimePct: Number(e.target.value) || undefined })}
-                              className="w-28 px-2 py-1 border rounded-lg"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
-                              onChange={(e) => updateProcess(i, { wipUnits: Number(e.target.value) || undefined })}
-                              className="w-28 px-2 py-1 border rounded-lg"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <button
-                              onClick={() =>
-                                setDataset({ ...dataset, processes: dataset.processes.filter((_, j) => j !== i) })
-                              }
-                              className="px-2 py-1 border rounded-lg text-xs"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2">
-                <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
-                  Export Table CSV
-                </button>
-                <button
-                  onClick={() => setActiveTab("preview")}
-                  className="px-3 py-2 bg-gray-900 text-white rounded-xl text-sm"
-                >
-                  Go to Preview
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "preview" && (
-            <div className="space-y-3">
-              <div className="border rounded-2xl bg-white p-4 shadow-sm overflow-auto">
-                <VSMGraph ref={svgRef} dataset={dataset} width={1200} height={600} />
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={exportSVG} className="px-3 py-2 border rounded-xl text-sm">
-                  Export SVG
-                </button>
-                <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm">
-                  Export PNG
-                </button>
-                <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
-                  Export CSV
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <aside className="lg:col-span-1 space-y-4">
-          <div className="border rounded-2xl bg-white p-4 shadow-sm">
-            <div className="font-semibold mb-3">Project Information</div>
-            {currentProjectName && (
-              <div className="mb-3 p-2 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-600">Project Name</div>
-                <div className="font-medium">{currentProjectName}</div>
-              </div>
-            )}
-            <div className="space-y-2 text-sm">
-              <div
-                className={classNames("p-2 rounded-lg", dataset.customerDemandPerDay ? "bg-green-50" : "bg-gray-50")}
-              >
-                <div className="text-xs text-gray-600">Customer Demand</div>
-                <div className="font-medium">
-                  {dataset.customerDemandPerDay ? `${dataset.customerDemandPerDay} units/day` : "Not provided"}
-                </div>
-              </div>
-              <div
-                className={classNames("p-2 rounded-lg", dataset.processes.length > 0 ? "bg-green-50" : "bg-gray-50")}
-              >
-                <div className="text-xs text-gray-600">Process Steps</div>
-                <div className="font-medium">
-                  {dataset.processes.length > 0 ? `${dataset.processes.length} steps` : "Not provided"}
-                </div>
-              </div>
-              <div
-                className={classNames(
-                  "p-2 rounded-lg",
-                  dataset.processes.some((p) => p.cycleTimeSec != null) ? "bg-green-50" : "bg-gray-50",
-                )}
-              >
-                <div className="text-xs text-gray-600">Cycle Times</div>
-                <div className="font-medium">
-                  {dataset.processes.some((p) => p.cycleTimeSec != null) ? "Provided" : "Not provided"}
-                </div>
-              </div>
-              <div
-                className={classNames(
-                  "p-2 rounded-lg",
-                  dataset.processes.some((p) => p.changeoverSec != null) ? "bg-green-50" : "bg-gray-50",
-                )}
-              >
-                <div className="text-xs text-gray-600">Changeover Times</div>
-                <div className="font-medium">
-                  {dataset.processes.some((p) => p.changeoverSec != null) ? "Provided" : "Not provided"}
-                </div>
-              </div>
-              <div
-                className={classNames(
-                  "p-2 rounded-lg",
-                  dataset.processes.some((p) => p.uptimePct != null) ? "bg-green-50" : "bg-gray-50",
-                )}
-              >
-                <div className="text-xs text-gray-600">Uptime %</div>
-                <div className="font-medium">
-                  {dataset.processes.some((p) => p.uptimePct != null) ? "Provided" : "Not provided"}
-                </div>
-              </div>
-              <div
-                className={classNames(
-                  "p-2 rounded-lg",
-                  dataset.processes.some((p) => p.wipUnits != null) ? "bg-green-50" : "bg-gray-50",
-                )}
-              >
-                <div className="text-xs text-gray-600">WIP Values</div>
-                <div className="font-medium">
-                  {dataset.processes.some((p) => p.wipUnits != null) ? "Provided" : "Not provided"}
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </main>
+            </main>
+          </>
+        )}
+      </div>
 
       {showLogin && !showForgotPassword && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1585,6 +1784,14 @@ export default function Page() {
                   }}
                 >
                   {loading ? "PLEASE WAIT..." : isCreateAccount ? "CREATE ACCOUNT" : "LOGIN"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSkipLogin}
+                  className="w-full mt-3 py-2 text-[#5a7a92] hover:text-[#1a3a52] text-sm font-medium transition-colors"
+                >
+                  Skip Login (Use Local Mode)
                 </button>
               </div>
             </form>
