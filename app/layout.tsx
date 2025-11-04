@@ -7,15 +7,10 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Lean Vision-VSM",
-    template: "%s · Lean Vision-VSM",
-  },
-  description: "Cloud-enabled VSM Dashboard with AI assistance.",
-  applicationName: "Lean Vision-VSM",
-  generator: "Next.js",
-};
-
+  title: 'v0 App',
+  description: 'Created with v0',
+  generator: 'v0.app',
+}
 
 export default function RootLayout({
   children,

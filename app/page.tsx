@@ -1,18 +1,12 @@
-"use client";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
+"use client"
 
 import type React from "react"
-import { useEffect, useMemo, useRef, useState, useCallback } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import { VSMGraph } from "@/components/vsm-graph"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-//  NEW: import the intent result type (use the path you created)
-import type { IntentResult } from "@/lib/nlu/intent-schema" // or "@/lib/utils"
 
 // -------------------- Utility helpers --------------------
 
@@ -442,78 +436,46 @@ export default function Page() {
     return null
   }
 
-  // ⬇️ UPDATED: intent-aware first turn (no greeting regex, no assumptions)
-  const handleUserMessage = useCallback(async (raw: string) => {
+  async function handleUserMessage(raw: string) {
     const text = raw.trim()
     if (!text) return
 
     setChat((c) => [...c, { role: "user", text }])
 
     if (conversationState === "greeting" || conversationState === "asking_project") {
-      try {
-        const res = await fetch("/api/intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, knownProjects: [] }), // pass real names later if you have them
-        })
+      const lowerText = text.toLowerCase()
 
-        if (!res.ok) {
-          setChat((c) => [
-            ...c,
-            { role: "system", text: "I couldn’t parse that. Please share the project name only (e.g., “Scrap Sorting VSM”)." },
-          ])
-          setConversationState("asking_project")
-          setInputValue("")
-          return
-        }
-
-        const intent: IntentResult = await res.json()
-
-        if (intent.intent === "give_project_name" && intent.project_name) {
-          const proj = intent.project_name
-          setCurrentProjectName(proj)
-
-          if (useSupabase && currentChatId) {
-            try {
-              await supabase.from("chats").update({ title: proj, project_name: proj }).eq("id", currentChatId)
-            } catch {
-              /* non-fatal */
-            }
-          }
-
-          setChat((c) => [
-            ...c,
-            {
-              role: "system",
-              text: `Great! Let's create a Value Stream Mapping for "${proj}". I'll need some information to generate the diagram. You can provide details naturally, and I'll fill in the form on the right as we go.`,
-            },
-            {
-              role: "system",
-              text: "Let's start with: What is the customer demand per day (in units)?",
-            },
-          ])
-          setConversationState("collecting_data")
-          setInputValue("")
-          return
-        }
-
-        // Not a valid name yet — use the model’s suggested message
-        setChat((c) => [...c, { role: "system", text: intent.assistant_message }])
-        setConversationState("asking_project")
-        setInputValue("")
-        return
-      } catch {
-        setChat((c) => [
-          ...c,
-          { role: "system", text: "Sorry, I hit an issue. Please share just the project name (e.g., “Warehouse Flow Kaizen”)." },
-        ])
+      // Check if it's a greeting
+      if (lowerText.match(/^(hi|hello|hey|good morning|good afternoon|good evening|greetings)/)) {
+        setChat((c) => [...c, { role: "system", text: "Hello! What's the project today?" }])
         setConversationState("asking_project")
         setInputValue("")
         return
       }
-    }
 
-    // --- Your existing data collection flow remains unchanged below ---
+      // Assume the response is the project name
+      setCurrentProjectName(text)
+
+      // Update chat title and project name in database
+      if (useSupabase && currentChatId) {
+        await supabase.from("chats").update({ title: text, project_name: text }).eq("id", currentChatId)
+      }
+
+      setChat((c) => [
+        ...c,
+        {
+          role: "system",
+          text: `Great! Let's create a Value Stream Mapping for "${text}". I'll need some information to generate the diagram. You can provide details naturally, and I'll fill in the form on the right as we go.`,
+        },
+        {
+          role: "system",
+          text: "Let's start with: What is the customer demand per day (in units)?",
+        },
+      ])
+      setConversationState("collecting_data")
+      setInputValue("")
+      return
+    }
 
     const q = nextQuestion()
     if (q) {
@@ -633,7 +595,381 @@ export default function Page() {
       { role: "system", text: "I captured your note. Use the Data tab to edit any fields directly, or upload a file." },
     ])
     setInputValue("")
-  }, [conversationState, dataset, currentChatId, supabase, useSupabase])
+  }
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || !files.length) return
+
+    for (const f of Array.from(files)) {
+      if (f.type.includes("csv") || f.name.toLowerCase().endsWith(".csv")) {
+        const txt = await f.text()
+        const { headers, rows } = parseCSV(txt)
+        ingestTabular(headers, rows)
+      } else if (f.name.toLowerCase().endsWith(".xlsx") || f.name.toLowerCase().endsWith(".xls")) {
+        try {
+          const XLSX = await import("xlsx")
+          const data = await f.arrayBuffer()
+          const wb = XLSX.read(data, { type: "array" })
+          const sheet = wb.Sheets[wb.SheetNames[0]]
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+          const headers = (json[0] || []).map((x: any) => String(x))
+          const rows = json.slice(1) as string[][]
+          ingestTabular(headers, rows)
+        } catch (e) {
+          setChat((c) => [...c, { role: "system", text: "Couldn't parse Excel. Please save as CSV for now." }])
+        }
+      } else if (f.type.startsWith("image/")) {
+        setChat((c) => [...c, { role: "system", text: `Image '${f.name}' received. OCR will be added in Step 3.` }])
+      } else if (f.type.includes("text")) {
+        const txt = await f.text()
+        setInputValue((prev) => prev + "\n" + txt)
+      } else {
+        setChat((c) => [...c, { role: "system", text: `Unsupported file type: ${f.name}` }])
+      }
+    }
+  }
+
+  function ingestTabular(headers: string[], rows: string[][]) {
+    const nameIdx = headers.findIndex((h) => /process|step|operation/i.test(h))
+    const ctIdx = headers.findIndex((h) => /cycle/i.test(h))
+    const coIdx = headers.findIndex((h) => /change.?over|setup/i.test(h))
+    const upIdx = headers.findIndex((h) => /uptime|availability|util/i.test(h))
+    const wipIdx = headers.findIndex((h) => /wip|inventory/i.test(h))
+    const demandIdx = headers.findIndex((h) => /demand|takt|customer/i.test(h))
+
+    const procs: VSMProcess[] = []
+    rows.forEach((r, i) => {
+      const name = (nameIdx >= 0 ? r[nameIdx] : `P${i + 1}`) ?? `P${i + 1}`
+      procs.push({
+        id: `P${i + 1}`,
+        name: String(name),
+        cycleTimeSec: ctIdx >= 0 && r[ctIdx] ? Number(r[ctIdx]) : undefined,
+        changeoverSec: coIdx >= 0 && r[coIdx] ? Number(r[coIdx]) : undefined,
+        uptimePct: upIdx >= 0 && r[upIdx] ? Number(r[upIdx]) : undefined,
+        wipUnits: wipIdx >= 0 && r[wipIdx] ? Number(r[wipIdx]) : undefined,
+      })
+    })
+
+    const ds: VSMDataset = {
+      customerDemandPerDay:
+        demandIdx >= 0 && rows[0]?.[demandIdx] ? Number(rows[0][demandIdx]) : dataset.customerDemandPerDay,
+      processes: procs.length ? procs : dataset.processes,
+    }
+
+    setDataset(ds)
+    setChat((c) => [...c, { role: "system", text: `Parsed ${procs.length} rows from your table.` }])
+
+    const nq = nextQuestion()
+    if (nq) setChat((c) => [...c, { role: "system", text: `Next: ${nq.label}` }])
+  }
+
+  function updateProcess(i: number, patch: Partial<VSMProcess>) {
+    const ps = [...dataset.processes]
+    ps[i] = { ...ps[i], ...patch }
+    setDataset({ ...dataset, processes: ps })
+  }
+
+  function exportSVG() {
+    if (!svgRef.current) return
+    const serializer = new XMLSerializer()
+    const src = serializer.serializeToString(svgRef.current)
+    const blob = new Blob([src], { type: "image/svg+xml;charset=utf-8" })
+    download("vsm.svg", blob)
+  }
+
+  async function exportPNG() {
+    if (!svgRef.current) return
+    const svgEl = svgRef.current
+    const serializer = new XMLSerializer()
+    const src = serializer.serializeToString(svgEl)
+    const svg64 = btoa(unescape(encodeURIComponent(src)))
+    const img = new Image()
+    const w = svgEl.viewBox.baseVal.width || svgEl.clientWidth || 1200
+    const h = svgEl.viewBox.baseVal.height || svgEl.clientHeight || 600
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => blob && download("vsm.png", blob))
+    }
+    img.src = `data:image/svg+xml;base64,${svg64}`
+  }
+
+  function exportTableCSV() {
+    const headers = ["Step", "CycleTimeSec", "ChangeoverSec", "UptimePct", "WIPUnits"]
+    const rows = dataset.processes.map((p) => [
+      p.name,
+      p.cycleTimeSec ?? "",
+      p.changeoverSec ?? "",
+      p.uptimePct ?? "",
+      p.wipUnits ?? "",
+    ])
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+    downloadText("vsm_table.csv", csv)
+  }
+
+  async function handleNewChat() {
+    // Clear current state
+    setChat([])
+    setDataset({ processes: [] })
+    setCurrentProjectName("")
+    setConversationState("asking_project")
+
+    if (!useSupabase || !user) {
+      localStorage.removeItem("vsm_chat")
+      localStorage.removeItem("vsm_dataset")
+      setCurrentChatId(null)
+
+      // Set initial message immediately
+      setChat([{ role: "system", text: "What's the project today?" }])
+      return
+    }
+
+    try {
+      // Create new chat directly with client-side Supabase
+      const { data: newChat, error } = await supabase
+        .from("chats")
+        .insert({
+          user_id: user.id,
+          title: "New VSM Chat",
+          project_name: "",
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("[v0] Error creating new chat:", error)
+        alert(`Failed to create new chat: ${error.message}`)
+        return
+      }
+
+      if (newChat) {
+        setCurrentChatId(newChat.id)
+
+        // Set initial message immediately
+        setChat([{ role: "system", text: "What's the project today?" }])
+
+        // Refresh previous chats list
+        const { data: allChats } = await supabase
+          .from("chats")
+          .select("id, title, project_name, updated_at")
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false })
+
+        if (allChats) {
+          setPreviousChats(allChats)
+        }
+      }
+    } catch (error: any) {
+      console.error("[v0] Error creating new chat:", error)
+      alert(`Failed to create new chat: ${error.message}`)
+    }
+  }
+
+  async function loadPreviousChat(chatId: string) {
+    if (!useSupabase || !user) return
+
+    try {
+      setCurrentChatId(chatId)
+
+      // Get chat details including project name
+      const { data: chatData } = await supabase.from("chats").select("project_name").eq("id", chatId).single()
+
+      if (chatData) {
+        setCurrentProjectName(chatData.project_name || "")
+      }
+
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true })
+
+      if (messages && messages.length > 0) {
+        setChat(messages.map((m) => ({ role: m.role as "system" | "user", text: m.content })))
+        setConversationState("collecting_data")
+      } else {
+        setChat([])
+        setConversationState("greeting")
+      }
+
+      const { data: datasets } = await supabase
+        .from("vsm_datasets")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+
+      if (datasets && datasets.length > 0) {
+        setDataset({
+          customerDemandPerDay: datasets[0].customer_demand_per_day,
+          processes: datasets[0].processes,
+        })
+      } else {
+        setDataset({ processes: [] })
+      }
+
+      setShowPreviousChats(false)
+    } catch (error) {
+      console.error("[v0] Error loading previous chat:", error)
+    }
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!useSupabase) return
+
+    const form = e.target as HTMLFormElement
+    const formData = new FormData(form)
+    const emailInput = String(formData.get("resetEmail") || "").trim()
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput)) {
+      alert("Enter a valid email")
+      return
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) {
+        alert(`Error: ${error.message}`)
+        return
+      }
+
+      alert("Password reset link sent to your email!")
+      setShowForgotPassword(false)
+    } catch (error: any) {
+      console.error("[v0] Password reset error:", error)
+      alert(`Error: ${error.message}`)
+    }
+  }
+
+  async function submitLogin(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!useSupabase) {
+      setShowLogin(false)
+      return
+    }
+
+    const form = e.target as HTMLFormElement
+    const formData = new FormData(form)
+    const emailInput = String(formData.get("email") || "").trim()
+    const passwordInput = String(formData.get("password") || "").trim()
+    const fullNameInput = String(formData.get("fullName") || "").trim()
+    const confirmPasswordInput = String(formData.get("confirmPassword") || "").trim()
+    const phoneInput = String(formData.get("phone") || "").trim()
+    const companyInput = String(formData.get("company") || "").trim()
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput)) {
+      alert("Enter a valid email")
+      return
+    }
+
+    if (!passwordInput || passwordInput.length < 6) {
+      alert("Password must be at least 6 characters")
+      return
+    }
+
+    if (isCreateAccount) {
+      if (!fullNameInput) {
+        alert("Please enter your full name")
+        return
+      }
+
+      if (passwordInput !== confirmPasswordInput) {
+        alert("Passwords do not match")
+        return
+      }
+    }
+
+    try {
+      setLoading(true)
+
+      if (isCreateAccount) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: emailInput,
+          password: passwordInput,
+          options: {
+            data: {
+              full_name: fullNameInput,
+              phone: phoneInput,
+              company: companyInput,
+            },
+          },
+        })
+
+        if (signUpError) {
+          alert(`Error: ${signUpError.message}`)
+          return
+        }
+
+        if (signUpData.user) {
+          await supabase.from("user_profiles").insert({
+            id: signUpData.user.id,
+            email: emailInput,
+            full_name: fullNameInput,
+            phone: phoneInput,
+            company: companyInput,
+          })
+
+          // Automatically sign in after account creation
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: emailInput,
+            password: passwordInput,
+          })
+
+          if (signInError) {
+            alert(`Account created but sign in failed: ${signInError.message}`)
+            return
+          }
+
+          alert("Account created successfully!")
+          setShowLogin(false)
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: emailInput,
+          password: passwordInput,
+        })
+
+        if (signInError) {
+          alert(`Error: ${signInError.message}`)
+          return
+        }
+
+        setShowLogin(false)
+      }
+    } catch (error: any) {
+      console.error("[v0] Auth error:", error)
+      alert(`Error: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSignOut() {
+    if (useSupabase) {
+      await supabase.auth.signOut()
+    }
+    setUser(null)
+    setChat([])
+    setDataset({ processes: [] })
+    setCurrentChatId(null)
+    setCurrentProjectName("")
+    setConversationState("greeting")
+    localStorage.removeItem("vsm_chat")
+    localStorage.removeItem("vsm_dataset")
+    if (useSupabase) {
+      setShowLogin(true)
+    }
+  }
 
   const nextQ = nextQuestion()
 
