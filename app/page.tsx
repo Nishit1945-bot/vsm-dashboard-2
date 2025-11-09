@@ -1072,7 +1072,8 @@ export default function Page() {
       <aside
         className={classNames(
           "fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 z-20",
-          sidebarOpen ? "w-64" : "w-0",
+          "lg:translate-x-0 lg:w-64",
+          sidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full",
         )}
       >
         <div className="flex flex-col h-full">
@@ -1196,23 +1197,432 @@ export default function Page() {
         </div>
       </aside>
 
-      <div className={classNames("flex-1 transition-all duration-300", sidebarOpen ? "lg:ml-64" : "ml-0")}>
-        {/* Mobile sidebar toggle */}
+      {/* Main content area: Adjust margin based on sidebar state, add mobile burger menu */}
+      <div className={classNames("flex-1 transition-all duration-300 lg:ml-64", sidebarOpen ? "" : "ml-0")}>
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="fixed top-4 left-4 z-10 p-2 bg-gray-900 text-white rounded-lg shadow-lg lg:hidden"
+            className="fixed top-4 left-4 z-10 p-2.5 bg-gray-900 text-white rounded-lg shadow-lg lg:hidden"
+            aria-label="Open menu"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         )}
 
+        <main className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                {(["chat", "data", "preview"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={classNames(
+                      "px-3 py-2 rounded-xl text-sm border",
+                      activeTab === t ? "bg-gray-900 text-white" : "bg-white",
+                    )}
+                  >
+                    {t === "chat" ? "Chat" : t === "data" ? "Data" : "Preview"}
+                  </button>
+                ))}
+              </div>
+
+              {activeTab === "chat" && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left side: Chat interface */}
+                  <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
+                    <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
+                      {chat.map((m, i) => (
+                        <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
+                          <div
+                            className={classNames(
+                              "px-3 py-2 rounded-2xl text-sm",
+                              m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
+                            )}
+                          >
+                            {m.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t pt-3 mt-3">
+                      {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
+                          placeholder="Type your answer or instruction..."
+                          className="flex-1 px-3 py-2 border rounded-xl"
+                        />
+                        <button
+                          onClick={() => handleUserMessage(inputValue)}
+                          className="px-3 py-2 bg-gray-900 text-white rounded-xl"
+                        >
+                          Send
+                        </button>
+                        <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
+                          Upload
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFiles(e.target.files)}
+                            accept=".csv,.xlsx,.xls,image/*,text/plain"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right side: VSM Data Entry Form */}
+                  <div className="border rounded-2xl bg-white p-4 shadow-sm h-[520px] overflow-auto">
+                    <h3 className="font-semibold text-lg mb-4">VSM Data Entry</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Customer Demand (units/day)
+                        </label>
+                        <input
+                          type="number"
+                          value={
+                            dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
+                              ? dataset.customerDemandPerDay
+                              : ""
+                          }
+                          onChange={(e) =>
+                            setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
+                          }
+                          placeholder="e.g., 480"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700">Process Steps</label>
+                          <button
+                            onClick={() =>
+                              setDataset({
+                                ...dataset,
+                                processes: [
+                                  ...dataset.processes,
+                                  {
+                                    id: `P${dataset.processes.length + 1}`,
+                                    name: `Process ${dataset.processes.length + 1}`,
+                                  },
+                                ],
+                              })
+                            }
+                            className="px-2 py-1 text-xs border rounded-lg hover:bg-gray-50"
+                          >
+                            + Add Process
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {dataset.processes.map((p, i) => (
+                            <div key={p.id} className="border rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700">Process {i + 1}</span>
+                                <button
+                                  onClick={() =>
+                                    setDataset({
+                                      ...dataset,
+                                      processes: dataset.processes.filter((_, j) => j !== i),
+                                    })
+                                  }
+                                  className="text-xs text-red-600 hover:text-red-700"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+
+                              <input
+                                value={p.name}
+                                onChange={(e) => updateProcess(i, { name: e.target.value })}
+                                placeholder="Process name"
+                                className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                              />
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-xs text-gray-600">C/T (sec)</label>
+                                  <input
+                                    type="number"
+                                    value={
+                                      p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""
+                                    }
+                                    onChange={(e) =>
+                                      updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
+                                    }
+                                    placeholder="0"
+                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600">C/O (sec)</label>
+                                  <input
+                                    type="number"
+                                    value={
+                                      p.changeoverSec !== undefined && p.changeoverSec !== null ? p.changeoverSec : ""
+                                    }
+                                    onChange={(e) =>
+                                      updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
+                                    }
+                                    placeholder="0"
+                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600">Uptime %</label>
+                                  <input
+                                    type="number"
+                                    value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
+                                    onChange={(e) =>
+                                      updateProcess(i, { uptimePct: Number(e.target.value) || undefined })
+                                    }
+                                    placeholder="100"
+                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600">WIP (units)</label>
+                                  <input
+                                    type="number"
+                                    value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
+                                    onChange={(e) =>
+                                      updateProcess(i, { wipUnits: Number(e.target.value) || undefined })
+                                    }
+                                    placeholder="0"
+                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {dataset.processes.length === 0 && (
+                            <div className="text-center py-8 text-gray-500 text-sm">
+                              No processes added yet. Click "+ Add Process" to start.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setActiveTab("preview")}
+                        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        Generate VSM Preview
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "data" && (
+                <div className="border rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-600">Customer demand (units/day)</label>
+                      <input
+                        type="number"
+                        value={
+                          dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
+                            ? dataset.customerDemandPerDay
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
+                        }
+                        className="mt-1 w-full px-3 py-2 border rounded-xl"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-semibold">Processes</div>
+                      <button
+                        onClick={() =>
+                          setDataset({
+                            ...dataset,
+                            processes: [
+                              ...dataset.processes,
+                              {
+                                id: `P${dataset.processes.length + 1}`,
+                                name: `Process ${dataset.processes.length + 1}`,
+                              },
+                            ],
+                          })
+                        }
+                        className="px-3 py-1.5 border rounded-xl text-sm"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="overflow-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-600">
+                            <th className="p-2">#</th>
+                            <th className="p-2">Name</th>
+                            <th className="p-2">C/T (s)</th>
+                            <th className="p-2">C/O (s)</th>
+                            <th className="p-2">Uptime (%)</th>
+                            <th className="p-2">WIP (units)</th>
+                            <th className="p-2" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dataset.processes.map((p, i) => (
+                            <tr key={p.id} className="border-t">
+                              <td className="p-2">{i + 1}</td>
+                              <td className="p-2">
+                                <input
+                                  value={p.name}
+                                  onChange={(e) => updateProcess(i, { name: e.target.value })}
+                                  className="w-48 px-2 py-1 border rounded-lg"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <input
+                                  type="number"
+                                  value={p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""}
+                                  onChange={(e) =>
+                                    updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
+                                  }
+                                  className="w-28 px-2 py-1 border rounded-lg"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <input
+                                  type="number"
+                                  value={
+                                    p.changeoverSec !== undefined && p.changeoverSec !== null ? p.changeoverSec : ""
+                                  }
+                                  onChange={(e) =>
+                                    updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
+                                  }
+                                  className="w-28 px-2 py-1 border rounded-lg"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <input
+                                  type="number"
+                                  value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
+                                  onChange={(e) => updateProcess(i, { uptimePct: Number(e.target.value) || undefined })}
+                                  className="w-28 px-2 py-1 border rounded-lg"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <input
+                                  type="number"
+                                  value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
+                                  onChange={(e) => updateProcess(i, { wipUnits: Number(e.target.value) || undefined })}
+                                  className="w-28 px-2 py-1 border rounded-lg"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <button
+                                  onClick={() =>
+                                    setDataset({
+                                      ...dataset,
+                                      processes: dataset.processes.filter((_, j) => j !== i),
+                                    })
+                                  }
+                                  className="px-2 py-1 border rounded-lg text-xs"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
+                      Export Table CSV
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("preview")}
+                      className="px-3 py-2 bg-gray-900 text-white rounded-xl text-sm"
+                    >
+                      Go to Preview
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "preview" && (
+                <div className="space-y-3">
+                  <div className="border rounded-2xl bg-white shadow-sm">
+                    <div className="relative">
+                      <div className="overflow-x-auto overflow-y-hidden p-4" id="vsm-scroll-container">
+                        <VSMGraph
+                          ref={svgRef}
+                          dataset={dataset}
+                          width={Math.max(1400, dataset.processes.length * 250)}
+                          height={900}
+                        />
+                      </div>
+                      {/* Scroll navigation buttons */}
+                      {dataset.processes.length > 5 && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const container = document.getElementById("vsm-scroll-container")
+                              if (container) container.scrollLeft -= 300
+                            }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const container = document.getElementById("vsm-scroll-container")
+                              if (container) container.scrollLeft += 300
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
+                      Export PNG
+                    </button>
+                    <button onClick={exportJPG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
+                      Export JPG
+                    </button>
+                    <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
+                      Export CSV
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        </main>
+
         {showProjectInput ? (
           <div className="min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
-              <div className="text-center mb-8">
+              <div className="text-center mb-8 pt-16 lg:pt-0">
                 <Image
                   src="/logo.png"
                   alt="Lean Vision Logo"
@@ -1258,446 +1668,10 @@ export default function Page() {
             <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
               <div className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="p-2 hover:bg-gray-100 rounded-lg hidden lg:block"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{currentProjectName}</div>
-                    <div className="text-xs text-gray-500">Value Stream Mapping</div>
-                  </div>
+                  <h1 className="text-xl font-semibold">{currentProjectName}</h1>
                 </div>
               </div>
             </header>
-
-            <main className="p-6">
-              <div className="max-w-7xl mx-auto">
-                <section className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    {(["chat", "data", "preview"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setActiveTab(t)}
-                        className={classNames(
-                          "px-3 py-2 rounded-xl text-sm border",
-                          activeTab === t ? "bg-gray-900 text-white" : "bg-white",
-                        )}
-                      >
-                        {t === "chat" ? "Chat" : t === "data" ? "Data" : "Preview"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {activeTab === "chat" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Left side: Chat interface */}
-                      <div className="border rounded-2xl bg-white p-4 shadow-sm flex flex-col h-[520px]">
-                        <div ref={chatContainerRef} className="flex-1 overflow-auto space-y-3 pr-1">
-                          {chat.map((m, i) => (
-                            <div key={i} className={classNames("max-w-[85%]", m.role === "user" ? "ml-auto" : "")}>
-                              <div
-                                className={classNames(
-                                  "px-3 py-2 rounded-2xl text-sm",
-                                  m.role === "user" ? "bg-gray-900 text-white rounded-tr" : "bg-gray-100 rounded-tl",
-                                )}
-                              >
-                                {m.text}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="border-t pt-3 mt-3">
-                          {nextQ && <div className="mb-2 text-xs text-gray-600">Next: {nextQ.label}</div>}
-                          <div className="flex items-center gap-2">
-                            <input
-                              value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onKeyDown={(e) => e.key === "Enter" && handleUserMessage(inputValue)}
-                              placeholder="Type your answer or instruction..."
-                              className="flex-1 px-3 py-2 border rounded-xl"
-                            />
-                            <button
-                              onClick={() => handleUserMessage(inputValue)}
-                              className="px-3 py-2 bg-gray-900 text-white rounded-xl"
-                            >
-                              Send
-                            </button>
-                            <label className="px-3 py-2 border rounded-xl cursor-pointer text-sm">
-                              Upload
-                              <input
-                                type="file"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFiles(e.target.files)}
-                                accept=".csv,.xlsx,.xls,image/*,text/plain"
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right side: VSM Data Entry Form */}
-                      <div className="border rounded-2xl bg-white p-4 shadow-sm h-[520px] overflow-auto">
-                        <h3 className="font-semibold text-lg mb-4">VSM Data Entry</h3>
-
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Customer Demand (units/day)
-                            </label>
-                            <input
-                              type="number"
-                              value={
-                                dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
-                                  ? dataset.customerDemandPerDay
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
-                              }
-                              placeholder="e.g., 480"
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="block text-sm font-medium text-gray-700">Process Steps</label>
-                              <button
-                                onClick={() =>
-                                  setDataset({
-                                    ...dataset,
-                                    processes: [
-                                      ...dataset.processes,
-                                      {
-                                        id: `P${dataset.processes.length + 1}`,
-                                        name: `Process ${dataset.processes.length + 1}`,
-                                      },
-                                    ],
-                                  })
-                                }
-                                className="px-2 py-1 text-xs border rounded-lg hover:bg-gray-50"
-                              >
-                                + Add Process
-                              </button>
-                            </div>
-
-                            <div className="space-y-3">
-                              {dataset.processes.map((p, i) => (
-                                <div key={p.id} className="border rounded-lg p-3 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-gray-700">Process {i + 1}</span>
-                                    <button
-                                      onClick={() =>
-                                        setDataset({
-                                          ...dataset,
-                                          processes: dataset.processes.filter((_, j) => j !== i),
-                                        })
-                                      }
-                                      className="text-xs text-red-600 hover:text-red-700"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-
-                                  <input
-                                    value={p.name}
-                                    onChange={(e) => updateProcess(i, { name: e.target.value })}
-                                    placeholder="Process name"
-                                    className="w-full px-2 py-1.5 text-sm border rounded-lg"
-                                  />
-
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <label className="text-xs text-gray-600">C/T (sec)</label>
-                                      <input
-                                        type="number"
-                                        value={
-                                          p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""
-                                        }
-                                        onChange={(e) =>
-                                          updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs text-gray-600">C/O (sec)</label>
-                                      <input
-                                        type="number"
-                                        value={
-                                          p.changeoverSec !== undefined && p.changeoverSec !== null
-                                            ? p.changeoverSec
-                                            : ""
-                                        }
-                                        onChange={(e) =>
-                                          updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs text-gray-600">Uptime %</label>
-                                      <input
-                                        type="number"
-                                        value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
-                                        onChange={(e) =>
-                                          updateProcess(i, { uptimePct: Number(e.target.value) || undefined })
-                                        }
-                                        placeholder="100"
-                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs text-gray-600">WIP (units)</label>
-                                      <input
-                                        type="number"
-                                        value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
-                                        onChange={(e) =>
-                                          updateProcess(i, { wipUnits: Number(e.target.value) || undefined })
-                                        }
-                                        placeholder="0"
-                                        className="w-full px-2 py-1.5 text-sm border rounded-lg"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-
-                              {dataset.processes.length === 0 && (
-                                <div className="text-center py-8 text-gray-500 text-sm">
-                                  No processes added yet. Click "+ Add Process" to start.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => setActiveTab("preview")}
-                            className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-                          >
-                            Generate VSM Preview
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "data" && (
-                    <div className="border rounded-2xl bg-white p-4 shadow-sm">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-xs text-gray-600">Customer demand (units/day)</label>
-                          <input
-                            type="number"
-                            value={
-                              dataset.customerDemandPerDay !== undefined && dataset.customerDemandPerDay !== null
-                                ? dataset.customerDemandPerDay
-                                : ""
-                            }
-                            onChange={(e) =>
-                              setDataset({ ...dataset, customerDemandPerDay: Number(e.target.value) || undefined })
-                            }
-                            className="mt-1 w-full px-3 py-2 border rounded-xl"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold">Processes</div>
-                          <button
-                            onClick={() =>
-                              setDataset({
-                                ...dataset,
-                                processes: [
-                                  ...dataset.processes,
-                                  {
-                                    id: `P${dataset.processes.length + 1}`,
-                                    name: `Process ${dataset.processes.length + 1}`,
-                                  },
-                                ],
-                              })
-                            }
-                            className="px-3 py-1.5 border rounded-xl text-sm"
-                          >
-                            Add
-                          </button>
-                        </div>
-                        <div className="overflow-auto">
-                          <table className="min-w-full text-sm">
-                            <thead>
-                              <tr className="text-left text-gray-600">
-                                <th className="p-2">#</th>
-                                <th className="p-2">Name</th>
-                                <th className="p-2">C/T (s)</th>
-                                <th className="p-2">C/O (s)</th>
-                                <th className="p-2">Uptime (%)</th>
-                                <th className="p-2">WIP (units)</th>
-                                <th className="p-2" />
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {dataset.processes.map((p, i) => (
-                                <tr key={p.id} className="border-t">
-                                  <td className="p-2">{i + 1}</td>
-                                  <td className="p-2">
-                                    <input
-                                      value={p.name}
-                                      onChange={(e) => updateProcess(i, { name: e.target.value })}
-                                      className="w-48 px-2 py-1 border rounded-lg"
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input
-                                      type="number"
-                                      value={
-                                        p.cycleTimeSec !== undefined && p.cycleTimeSec !== null ? p.cycleTimeSec : ""
-                                      }
-                                      onChange={(e) =>
-                                        updateProcess(i, { cycleTimeSec: Number(e.target.value) || undefined })
-                                      }
-                                      className="w-28 px-2 py-1 border rounded-lg"
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input
-                                      type="number"
-                                      value={
-                                        p.changeoverSec !== undefined && p.changeoverSec !== null ? p.changeoverSec : ""
-                                      }
-                                      onChange={(e) =>
-                                        updateProcess(i, { changeoverSec: Number(e.target.value) || undefined })
-                                      }
-                                      className="w-28 px-2 py-1 border rounded-lg"
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input
-                                      type="number"
-                                      value={p.uptimePct !== undefined && p.uptimePct !== null ? p.uptimePct : ""}
-                                      onChange={(e) =>
-                                        updateProcess(i, { uptimePct: Number(e.target.value) || undefined })
-                                      }
-                                      className="w-28 px-2 py-1 border rounded-lg"
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input
-                                      type="number"
-                                      value={p.wipUnits !== undefined && p.wipUnits !== null ? p.wipUnits : ""}
-                                      onChange={(e) =>
-                                        updateProcess(i, { wipUnits: Number(e.target.value) || undefined })
-                                      }
-                                      className="w-28 px-2 py-1 border rounded-lg"
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <button
-                                      onClick={() =>
-                                        setDataset({
-                                          ...dataset,
-                                          processes: dataset.processes.filter((_, j) => j !== i),
-                                        })
-                                      }
-                                      className="px-2 py-1 border rounded-lg text-xs"
-                                    >
-                                      Delete
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-2">
-                        <button onClick={exportTableCSV} className="px-3 py-2 border rounded-xl text-sm">
-                          Export Table CSV
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("preview")}
-                          className="px-3 py-2 bg-gray-900 text-white rounded-xl text-sm"
-                        >
-                          Go to Preview
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "preview" && (
-                    <div className="space-y-3">
-                      <div className="border rounded-2xl bg-white shadow-sm">
-                        <div className="relative">
-                          <div className="overflow-x-auto overflow-y-hidden p-4" id="vsm-scroll-container">
-                            <VSMGraph
-                              ref={svgRef}
-                              dataset={dataset}
-                              width={Math.max(1400, dataset.processes.length * 250)}
-                              height={900}
-                            />
-                          </div>
-                          {/* Scroll navigation buttons */}
-                          {dataset.processes.length > 5 && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  const container = document.getElementById("vsm-scroll-container")
-                                  if (container) container.scrollLeft -= 300
-                                }}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
-                              >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 19l-7-7 7-7"
-                                  />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const container = document.getElementById("vsm-scroll-container")
-                                  if (container) container.scrollLeft += 300
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg border border-gray-200"
-                              >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={exportPNG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
-                          Export PNG
-                        </button>
-                        <button onClick={exportJPG} className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50">
-                          Export JPG
-                        </button>
-                        <button
-                          onClick={exportTableCSV}
-                          className="px-3 py-2 border rounded-xl text-sm hover:bg-gray-50"
-                        >
-                          Export CSV
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </section>
-                {/* Removed aside section as content is now full width */}
-              </div>
-            </main>
           </>
         )}
       </div>
