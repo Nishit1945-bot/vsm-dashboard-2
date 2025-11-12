@@ -37,7 +37,30 @@ export function useChat(userId: string | null) {
   }
 
   async function handleNewChat(projectName: string) {
-    if (!userId) return
+    if (!userId) {
+      // Local mode: create chat without Supabase
+      const localChat: Chat = {
+        id: `local-${Date.now()}`,
+        user_id: 'local',
+        title: projectName,
+        project_name: projectName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      setChats((prev) => [localChat, ...prev])
+      setCurrentChatId(localChat.id)
+      
+      // Add initial system message
+      const welcomeMsg: Message = {
+        id: `msg-${Date.now()}`,
+        chat_id: localChat.id,
+        role: 'assistant',
+        content: `Great! Let's create a Value Stream Mapping for "${projectName}". I'll help you collect the necessary data. What would you like to know about VSM?`,
+        created_at: new Date().toISOString(),
+      }
+      setMessages([welcomeMsg])
+      return
+    }
 
     const newChat = await createNewChat(userId, projectName)
     if (newChat) {
@@ -45,63 +68,100 @@ export function useChat(userId: string | null) {
       setCurrentChatId(newChat.id)
       
       // Add initial system message
-      await handleSendMessage(
-        `Great! Let's create a Value Stream Mapping for "${projectName}". I'll help you collect the necessary data.`
+      await addMessage(
+        newChat.id,
+        'assistant',
+        `Great! Let's create a Value Stream Mapping for "${projectName}". I'll help you collect the necessary data. What would you like to know about VSM?`
       )
+      await loadMessages()
     }
   }
 
-  async function handleSendMessage(content: string, role: 'user' | 'assistant' = 'user') {
+  async function handleSendMessage(content: string) {
     if (!currentChatId) return
 
     // Add user message to UI immediately
-    if (role === 'user') {
-      const tempMessage: Message = {
-        id: `temp-${Date.now()}`,
-        chat_id: currentChatId,
-        role: 'user',
-        content,
-        created_at: new Date().toISOString(),
+    const tempUserMessage: Message = {
+      id: `temp-${Date.now()}`,
+      chat_id: currentChatId,
+      role: 'user',
+      content,
+      created_at: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, tempUserMessage])
+
+    // Save to database if not in local mode
+    if (userId) {
+      const savedMessage = await addMessage(currentChatId, 'user', content)
+      if (savedMessage) {
+        // Replace temp message with saved one
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === tempUserMessage.id ? savedMessage : msg
+          )
+        )
       }
-      setMessages((prev) => [...prev, tempMessage])
     }
 
-    // Save to database
-    const savedMessage = await addMessage(currentChatId, role, content)
-    
-    if (savedMessage && role === 'user') {
-      // Replace temp message with saved one
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg.id.startsWith('temp-') && msg.content === content ? savedMessage : msg
-        )
-      )
+    // Get AI response
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/hf-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, { role: 'user', content }],
+        }),
+      })
 
-      // Get AI response
-      setIsLoading(true)
-      try {
-        const response = await fetch('/api/hf-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [...messages, { role: 'user', content }],
-          }),
-        })
-
-        if (response.ok) {
-          const { response: aiResponse } = await response.json()
-          
-          // Add AI response
+      if (response.ok) {
+        const { response: aiResponse } = await response.json()
+        
+        // Add AI response
+        if (userId) {
           const aiMessage = await addMessage(currentChatId, 'assistant', aiResponse)
           if (aiMessage) {
             setMessages((prev) => [...prev, aiMessage])
           }
+        } else {
+          // Local mode
+          const localAiMessage: Message = {
+            id: `msg-${Date.now()}`,
+            chat_id: currentChatId,
+            role: 'assistant',
+            content: aiResponse,
+            created_at: new Date().toISOString(),
+          }
+          setMessages((prev) => [...prev, localAiMessage])
         }
-      } catch (error) {
-        console.error('[Chat] Error getting AI response:', error)
-      } finally {
-        setIsLoading(false)
+      } else {
+        // Handle API errors
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        const errorMessage = errorData.error || 'Failed to get AI response'
+        
+        const errorMsg: Message = {
+          id: `error-${Date.now()}`,
+          chat_id: currentChatId,
+          role: 'assistant',
+          content: `Sorry, ${errorMessage}. Please try again.`,
+          created_at: new Date().toISOString(),
+        }
+        setMessages((prev) => [...prev, errorMsg])
       }
+    } catch (error) {
+      console.error('[Chat] Error getting AI response:', error)
+      
+      // Show error message
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        chat_id: currentChatId,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        created_at: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
     }
   }
 

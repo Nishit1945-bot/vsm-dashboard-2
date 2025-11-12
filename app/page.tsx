@@ -6,7 +6,7 @@ import type { User } from '@supabase/supabase-js'
 import LoginForm from '@/components/auth/LoginForm'
 import Sidebar from '@/components/layout/Sidebar'
 import ProjectPrompt from '@/components/project/ProjectPrompt'
-import ChatInterface from '@/components/chat/ChatInterface'
+import Dashboard from '@/components/dashboard/Dashboard'
 import { useChat } from '@/lib/hooks/useChat'
 
 export default function Page() {
@@ -14,6 +14,7 @@ export default function Page() {
   const [showLogin, setShowLogin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showProjectPrompt, setShowProjectPrompt] = useState(true)
+  const [currentProjectName, setCurrentProjectName] = useState('')
 
   const {
     chats,
@@ -83,16 +84,19 @@ export default function Page() {
     }
     setUser(null)
     setCurrentChatId(null)
+    setCurrentProjectName('')
     setShowLogin(true)
   }
 
   async function handleProjectSubmit(projectName: string) {
+    setCurrentProjectName(projectName)
     await handleNewChat(projectName)
     setShowProjectPrompt(false)
   }
 
   function handleNewChatClick() {
     setCurrentChatId(null)
+    setCurrentProjectName('')
     setShowProjectPrompt(true)
   }
 
@@ -128,15 +132,13 @@ export default function Page() {
         {showProjectPrompt ? (
           <ProjectPrompt onSubmit={handleProjectSubmit} />
         ) : (
-          <div className="flex-1 p-6">
-            <div className="max-w-4xl mx-auto h-full">
-              <ChatInterface
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isLoading={isChatLoading}
-              />
-            </div>
-          </div>
+          <Dashboard
+            projectName={currentProjectName}
+            chatId={currentChatId || ''}
+            messages={messages}
+            isLoading={isChatLoading}
+            onSendMessage={handleSendMessage}
+          />
         )}
       </div>
     </div>

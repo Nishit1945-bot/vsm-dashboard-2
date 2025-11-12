@@ -1,0 +1,78 @@
+b1a2588 | Nishit Acharya | 2025-11-12 | Complete VSM dashboard with Hugging Face integration
+84bfcc5 | Nishit Acharya | 2025-11-09 | feat: updated layout & dynamic page + added new icon
+ac10654 | Nishit Acharya | 2025-11-06 | fix(layout): updated app layout structure
+6eae2fe | Nishit Acharya | 2025-11-04 | feat(page): add active data form to dashboard
+941b88b | Nishit Acharya | 2025-11-04 | feat(page): update landing page content/layout
+ac2e651 | Nishit Acharya | 2025-11-04 | chore: update VSM dashboard (new vsm-shapes, README removal, config & page tweaks)
+b3e90aa | Nishit Acharya | 2025-11-04 | Push all current project changes including layout, Supabase, and config updates
+c28917f | Nishit Acharya | 2025-11-03 | chore: update git log
+bfc83d3 | Nishit Acharya | 2025-11-03 | Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
+d395512 | Nishit Acharya | 2025-11-03 | chore: update git log
+daba4ec | Nishit Acharya | 2025-11-03 | Hotfix: disable SSG on client pages + remove document.cookie from Supabase client
+b3b593f | Nishit Acharya | 2025-11-03 | chore: update git log
+b381a97 | Nishit Acharya | 2025-11-03 | Hotfix: force client rendering for Supabase pages, remove cookie shim, and pin API routes to nodejs runtime
+1176d21 | Nishit Acharya | 2025-11-03 | chore: update git log
+06ca780 | Nishit Acharya | 2025-11-03 | Move OpenAI initialization to runtime
+d9ace23 | Nishit Acharya | 2025-11-03 | chore: update git log
+111b654 | Nishit Acharya | 2025-11-03 | Trigger redeploy with OpenAI key
+f505670 | Nishit Acharya | 2025-11-03 | chore: update git log
+83f56a6 | Nishit Acharya | 2025-11-03 | Add openai package
+81a9b38 | Nishit Acharya | 2025-11-03 | chore: update git log
+fb8569e | Nishit Acharya | 2025-11-03 | Fix OpenAI import and API usage
+b59b5a7 | Nishit Acharya | 2025-11-03 | chore: update git log
+7379757 | Nishit Acharya | 2025-11-03 | Remove unused openai import
+5c2ac13 | Nishit Acharya | 2025-11-03 | chore: update git log
+5a0560f | Nishit Acharya | 2025-11-03 | Fix: Remove space from intend folder and fix syntax error
+88881de | Nishit Acharya | 2025-11-03 | chore: update git log
+6018eef | Nishit Acharya | 2025-11-03 | Fix build error: remove space from intend folder name
+ca7c72c | Nishit Acharya | 2025-11-03 | chore: update git log
+5420198 | Nishit Acharya | 2025-11-03 | Revert to last working deployment
+f693ee5 | Nishit Acharya | 2025-11-03 | chore: update git log
+308306c | Nishit Acharya | 2025-11-03 | Commit all remaining changes
+3b1dc69 | Nishit Acharya | 2025-11-03 | chore: update git log
+c4b597a | Nishit Acharya | 2025-11-03 | Update git log documentation
+b0d02de | Nishit Acharya | 2025-11-03 | chore: update git log
+53879ad | Nishit Acharya | 2025-11-03 | chore(docs): update git log and summary
+3fd2c11 | Nishit Acharya | 2025-11-02 | chore: update git log
+ac4dbeb | Nishit Acharya | 2025-11-02 | docs: update git logs
+79aab94 | Nishit Acharya | 2025-11-02 | chore: update git log
+50ccc22 | Nishit Acharya | 2025-11-02 | docs: update git logs
+69c63fc | Nishit Acharya | 2025-11-02 | chore: update git log
+d29c47d | Nishit Acharya | 2025-11-02 | docs: update git log and gpt model
+0942f85 | Nishit Acharya | 2025-11-02 | chore: update git log
+7174c97 | Nishit Acharya | 2025-11-02 | chore: remove GPT-4o-mini & OpenAI SDK, add placeholder responses, keep industry-first prompt
+75fb425 | Nishit Acharya | 2025-11-02 | chore: update git log
+4997c5a | Nishit Acharya | 2025-11-02 | restore intent route from HEAD and rename
+c92de76 | Nishit Acharya | 2025-11-02 | chore: update git log
+fa04d67 | Nishit Acharya | 2025-11-02 | fix(api): rename intend␠ to intent; clean stray folder; update ignore
+05c654d | Nishit Acharya | 2025-10-31 | chore: update git log
+008b856 | Nishit Acharya | 2025-10-31 | feat(vsm): guided VSM chat + CSV normalization + minimal UI wiring
+5ed2ced | Nishit Acharya | 2025-10-31 | chore: update git log
+40335e7 | Nishit Acharya | 2025-10-31 | chore: fix app/api/intend route path
+2926b29 | Nishit Acharya | 2025-10-31 | chore: update git log
+5ee91c3 | Nishit Acharya | 2025-10-31 | Merge: conclude pending merge (drop DS_Store and update .gitignore)
+eb82b50 | Nishit Acharya | 2025-10-31 | chore: update git log
+680730a | Nishit Acharya | 2025-10-31 | Merge: conclude pending merge (drop DS_Store and update .gitignore)
+6d33be7 | Nishit Acharya | 2025-10-31 | chore: update git log
+551e8f6 | Nishit Acharya | 2025-10-31 | wip: saving local edits before syncing with main
+62d71d7 | Nishit Acharya | 2025-10-31 | chore: update git log
+76acfdc | Nishit Acharya | 2025-10-31 | feat: add intent-based chatbot logic and new intent API
+81452a2 | Nishit Acharya | 2025-10-31 | chore: update git log
+e0b1da6 | Nishit Acharya | 2025-10-31 | feat: add intent-based chatbot logic and new intent API
+72fb751 | Nishit Acharya | 2025-10-31 | chore: update git log
+2d41b56 | Nishit Acharya | 2025-10-31 | feat: add intent recognition and humanised project identification to chatbot
+b56a5c5 | Nishit Acharya | 2025-10-31 | chore: update git log
+715c811 | Nishit Acharya | 2025-10-31 | feat: add intent recognition and humanised project identification to chatbot
+bbb6fc1 | Nishit Acharya | 2025-10-28 | chore: update git log
+7b181fe | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+ba11990 | Nishit Acharya | 2025-10-28 | chore: update git log
+5048c89 | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+eb3958d | Nishit Acharya | 2025-10-28 | chore: update git log
+ad486ea | Nishit Acharya | 2025-10-28 | chore: add docs folder and initial git logs
+08265b1 | Nishit Acharya | 2025-10-28 | chore: ignore macOS .DS_Store files
+21bc06b | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+93612ee | Nishit Acharya | 2025-10-28 | chore: test post-commit hook
+bf0811c | Nishit Acharya | 2025-10-28 | Merge pull request #1 from Nishit1945-bot/fix/title-lean-vision-vsm
+d4aab92 | Nishit Acharya | 2025-10-28 | Set default title to 'Lean Vision-VSM' in metadata
+5d54c72 | Nishit acharya | 2025-10-18 | Initial commit
+3a654be | Nishit acharya | 2025-10-18 | Initial commit
