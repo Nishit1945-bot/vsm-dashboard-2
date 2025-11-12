@@ -1,3 +1,4 @@
+1a2dcae | Nishit Acharya | 2025-11-12 | Fix: Use custom VSM model with fallback handling
 b1a2588 | Nishit Acharya | 2025-11-12 | Complete VSM dashboard with Hugging Face integration
 84bfcc5 | Nishit Acharya | 2025-11-09 | feat: updated layout & dynamic page + added new icon
 ac10654 | Nishit Acharya | 2025-11-06 | fix(layout): updated app layout structure
