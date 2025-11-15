@@ -1,6 +1,7 @@
-* f85f02f (HEAD -> main) chore: update git log
+* e542dd5 (HEAD -> main) Add HuggingFace integration, CSV upload, Data table, VSM Preview, and Analytics dashboard
+* f85f02f (origin/main) chore: update git log
 * 1a2dcae Fix: Use custom VSM model with fallback handling
-* b1a2588 (origin/main) Complete VSM dashboard with Hugging Face integration
+* b1a2588 Complete VSM dashboard with Hugging Face integration
 * 84bfcc5 feat: updated layout & dynamic page + added new icon
 * ac10654 fix(layout): updated app layout structure
 * 6eae2fe feat(page): add active data form to dashboard
