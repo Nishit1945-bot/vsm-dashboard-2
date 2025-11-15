@@ -1,3 +1,4 @@
+// lib/hooks/useChat.ts
 import { useState, useEffect } from 'react'
 import type { Chat, Message } from '@/types'
 import { getUserChats, getChatMessages, createNewChat, addMessage } from '@/lib/supabase/queries'
@@ -174,5 +175,6 @@ export function useChat(userId: string | null) {
     handleNewChat,
     handleSendMessage,
     loadChats,
+    loadMessages, // Make sure this is exported!
   }
 }

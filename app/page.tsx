@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
@@ -15,6 +14,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [showProjectPrompt, setShowProjectPrompt] = useState(true)
   const [currentProjectName, setCurrentProjectName] = useState('')
+  const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'preview' | 'analytics'>('chat')
 
   const {
     chats,
@@ -30,7 +30,6 @@ export default function Page() {
   useEffect(() => {
     async function loadUser() {
       const supabaseConfigured = isSupabaseConfigured()
-      
       if (!supabaseConfigured) {
         console.log('[App] Supabase not configured, using local mode')
         setLoading(false)
@@ -45,16 +44,13 @@ export default function Page() {
       }
 
       const { data: { user: currentUser } } = await supabase.auth.getUser()
-      
       if (!currentUser) {
         setShowLogin(true)
       } else {
         setUser(currentUser)
       }
-      
       setLoading(false)
     }
-
     loadUser()
 
     // Listen for auth changes
@@ -129,6 +125,52 @@ export default function Page() {
 
       {/* Main content */}
       <div className="flex-1 lg:ml-64 flex flex-col">
+        {/* Tab Navigation */}
+        {!showProjectPrompt && (
+          <div className="bg-white border-b px-6 py-3 flex items-center space-x-4">
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'chat'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => setActiveTab('data')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'data'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Data
+            </button>
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'preview'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Preview
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'analytics'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Analytics
+            </button>
+          </div>
+        )}
+
         {showProjectPrompt ? (
           <ProjectPrompt onSubmit={handleProjectSubmit} />
         ) : (
@@ -138,6 +180,7 @@ export default function Page() {
             messages={messages}
             isLoading={isChatLoading}
             onSendMessage={handleSendMessage}
+            activeTab={activeTab}
           />
         )}
       </div>
