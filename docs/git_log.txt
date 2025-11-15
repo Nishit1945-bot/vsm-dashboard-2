@@ -1,3 +1,4 @@
+e1d3376 | Nishit Acharya | 2025-11-15 | chore: update git log
 e542dd5 | Nishit Acharya | 2025-11-15 | Add HuggingFace integration, CSV upload, Data table, VSM Preview, and Analytics dashboard
 f85f02f | Nishit Acharya | 2025-11-12 | chore: update git log
 1a2dcae | Nishit Acharya | 2025-11-12 | Fix: Use custom VSM model with fallback handling
