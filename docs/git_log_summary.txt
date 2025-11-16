@@ -1,8 +1,9 @@
-* ecfcace (HEAD -> main) chore: update git log
+* 2973128 (HEAD -> main) Updated VSMPreview arrows, added CustomerSupplier component, and minor fixes
+* ecfcace (origin/main) chore: update git log
 * 756c8a8 Remove exposed API tokens
 * e1d3376 chore: update git log
 * e542dd5 Add HuggingFace integration, CSV upload, Data table, VSM Preview, and Analytics dashboard
-* f85f02f (origin/main) chore: update git log
+* f85f02f chore: update git log
 * 1a2dcae Fix: Use custom VSM model with fallback handling
 * b1a2588 Complete VSM dashboard with Hugging Face integration
 * 84bfcc5 feat: updated layout & dynamic page + added new icon
