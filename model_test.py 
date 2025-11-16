@@ -5,10 +5,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from huggingface_hub import login
 import torch
 
-# 1️⃣ Log in to Hugging Face to access private models
+#  Log in to Hugging Face to access private models
 login("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")  # only needed once per session
 
-# 2️⃣ Load tokenizer and model
+# Load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("nishit1945/VSM-LLM")
 model = AutoModelForCausalLM.from_pretrained("nishit1945/VSM-LLM")
 s
@@ -16,11 +16,11 @@ s
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
-# 3️⃣ Prepare input
+#  Prepare input
 prompt = "Hello, can you summarize AI in one sentence?"
 inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
-# 4️⃣ Generate output
+#  Generate output
 outputs = model.generate(
     **inputs,
     max_new_tokens=100,  # limit output length
@@ -29,6 +29,6 @@ outputs = model.generate(
     top_p=0.9
 )
 
-# 5️⃣ Decode generated text
+#  Decode generated text
 generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
 print("Model output:", generated_text)
