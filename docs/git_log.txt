@@ -1,3 +1,4 @@
+25485c5 | Nishit Acharya | 2025-11-16 | chore: update git log
 2973128 | Nishit Acharya | 2025-11-16 | Updated VSMPreview arrows, added CustomerSupplier component, and minor fixes
 ecfcace | Nishit Acharya | 2025-11-15 | chore: update git log
 756c8a8 | Nishit Acharya | 2025-11-15 | Remove exposed API tokens

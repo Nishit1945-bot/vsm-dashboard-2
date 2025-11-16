@@ -102,6 +102,10 @@ export default function VSMPreview({
               <stop offset="0%" stopColor="#60A5FA" />
               <stop offset="100%" stopColor="#2563EB" />
             </linearGradient>
+            {/* Arrow marker definition */}
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="black"/>
+            </marker>
           </defs>
 
           {/* ========== SECTION 1: INFORMATION FLOWS ========== */}
@@ -153,7 +157,7 @@ export default function VSMPreview({
             </text>
           </g>
 
-         {/* Customer (RIGHT) */}
+          {/* Customer (RIGHT) */}
           <g transform="translate(1430, 120)">
             <rect x="-40" y="20" width="150" height="60" fill="url(#blueGradient)" stroke="black" strokeWidth="3"/>
             <path 
@@ -171,7 +175,6 @@ export default function VSMPreview({
           <g transform="translate(910, 155)">
             <path d="M 480 -10 L 250 -10 L 270 10 L 0 10" stroke="black" strokeWidth="2" fill="none"/>
             <polygon points="20,3 0,10 20,17" fill="black"/>
-            
           </g>
 
           {/* Arrow: Admin → Supplier */}
@@ -201,7 +204,7 @@ export default function VSMPreview({
           />
 
           {/* Truck under Supplier (left) */}
-          <g transform="translate(120, 370)">
+          <g transform="translate(60, 370)">
             <rect x="15" y="8" width="35" height="15" fill="black" stroke="black" strokeWidth="2"/>
             <rect x="5" y="13" width="15" height="10" fill="black" stroke="black" strokeWidth="2"/>
             <circle cx="15" cy="25" r="4" fill="white" stroke="black" strokeWidth="2"/>
@@ -211,8 +214,18 @@ export default function VSMPreview({
             </text>
           </g>
 
+          {/* DOWN ARROW: Supplier → First Process */}
+          <g transform="translate(155, 210)">
+            <path
+              d="M 0 0 L 0 200 L 60 200 L 60 180 L 100 220 L 60 260 L 60 240 L -20 240 L -20 0 Z"
+              fill="grey"
+              stroke="black"
+              strokeWidth="2"
+            />
+          </g>
+
           {/* Truck under Customer (right) */}
-          <g transform="translate(1460, 370)">
+          <g transform="translate(1500, 370)">
             <rect x="15" y="8" width="35" height="15" fill="black" stroke="black" strokeWidth="2"/>
             <rect x="5" y="13" width="15" height="10" fill="black" stroke="black" strokeWidth="2"/>
             <circle cx="15" cy="25" r="4" fill="white" stroke="black" strokeWidth="2"/>
@@ -222,12 +235,6 @@ export default function VSMPreview({
             </text>
           </g>
 
-          {/* Arrow from Supplier to first process */}
-          <g transform="translate(120, 450)">
-            <line x1="80" y1="0" x2="160" y2="0" stroke="black" strokeWidth="2"/>
-            <polygon points="160,-7 180,0 160,7" fill="black"/>
-          </g>
-
           {/* Processes */}
           {processes.map((process, index) => {
             const x = 300 + index * PROCESS_SPACING;
@@ -235,18 +242,6 @@ export default function VSMPreview({
 
             return (
               <g key={process.id}>
-                {/* Information flow arrow from Production Control to Process */}
-                {/* ========================================== 
-                <line
-                  x1="790"
-                  y1="230"
-                  x2={x + PROCESS_WIDTH / 2}
-                  y2={y - 10}
-                  stroke="black"
-                  strokeWidth="2"
-                  markerEnd="url(#arrowhead)"
-                />
-                 ========================================== */}
                 {/* Process Box - Blue gradient header */}
                 <rect 
                   x={x} 
@@ -270,7 +265,7 @@ export default function VSMPreview({
                   {process.name}
                 </text>
 
-                {/* White box below with description */}
+                {/* White box below */}
                 <rect 
                   x={x} 
                   y={y + 35} 
@@ -281,16 +276,6 @@ export default function VSMPreview({
                   strokeWidth="2"
                 />
                 
-                
-              
-                {/* Operator icon at bottom 
-                <circle cx={x + 15} cy={y + PROCESS_HEIGHT - 7} r="3" fill="black"/>
-                <circle cx={x + 15} cy={y + PROCESS_HEIGHT} r="5" fill="black"/> */}
-                
-                
-                
-
-
                 {/* Data Box below process */}
                 <g transform={`translate(${x}, ${y + PROCESS_HEIGHT + 10})`}>
                   <rect width={PROCESS_WIDTH} height={DATA_BOX_HEIGHT} fill="white" stroke="black" strokeWidth="2"/>
@@ -298,23 +283,23 @@ export default function VSMPreview({
                   <line x1="0" y1="44" x2={PROCESS_WIDTH} y2="44" stroke="black" strokeWidth="1"/>
                   <line x1="0" y1="66" x2={PROCESS_WIDTH} y2="66" stroke="black" strokeWidth="1"/>
                   
-                  <text x="10" y="15" fontSize="15" fontFamily="Arial">C/T = {process.cycleTime} sec</text>
-                  <text x="10" y="37" fontSize="15" fontFamily="Arial">C/O = {process.changeoverTime} min</text>
-                  <text x="10" y="59" fontSize="15" fontFamily="Arial">Uptime = {process.uptime}%</text>
-                  <text x="10" y="81" fontSize="15" fontFamily="Arial">{process.operators} operators</text>
+                  <text x="10" y="15" fontSize="11" fontFamily="Arial">C/T = {process.cycleTime} sec</text>
+                  <text x="10" y="37" fontSize="11" fontFamily="Arial">C/O = {process.changeoverTime} min</text>
+                  <text x="10" y="59" fontSize="11" fontFamily="Arial">Uptime = {process.uptime}%</text>
+                  <text x="10" y="81" fontSize="11" fontFamily="Arial">{process.operators} operators</text>
                 </g>
 
-                {/* Inventory Triangle and Push Arrow (between processes) */}
+                {/* Elements between processes */}
                 {index < processes.length - 1 && (
                   <>
                     {/* Inventory Triangle */}
                     <polygon 
-                      points={`${x + PROCESS_WIDTH + 30},${MATERIAL_FLOW_Y - 25} ${x + PROCESS_WIDTH + 10},${MATERIAL_FLOW_Y + 20} ${x + PROCESS_WIDTH + 50},${MATERIAL_FLOW_Y + 20}`}
-                      fill="white"
+                      points={`${x + PROCESS_WIDTH + 30},${MATERIAL_FLOW_Y + 55} ${x + PROCESS_WIDTH + 10},${MATERIAL_FLOW_Y + 95} ${x + PROCESS_WIDTH + 50},${MATERIAL_FLOW_Y + 95}`}
+                      fill="yellow"
                       stroke="black"
                       strokeWidth="2"
                     />
-                    <text x={x + PROCESS_WIDTH + 30} y={MATERIAL_FLOW_Y + 35} textAnchor="middle" fontSize="12" fontFamily="Arial" fontWeight="bold">
+                    <text x={x + PROCESS_WIDTH + 30} y={MATERIAL_FLOW_Y + 115} textAnchor="middle" fontSize="12" fontFamily="Arial" fontWeight="bold">
                       {process.inventoryAfter}
                     </text>
 
@@ -324,7 +309,39 @@ export default function VSMPreview({
                       {[0, 1, 2, 3].map((i) => (
                         <rect key={i} x={8 + i * 15} y="0" width="6" height="6" fill="white" stroke="black" strokeWidth="1"/>
                       ))}
-                      <polygon points="60,-7 80,0 60,7" fill="black"/>
+                      <polygon 
+                        points="60,-7 80,0 60,7" 
+                        fill="black"
+                      />
+                    </g>
+
+                    
+                    
+                    
+                    
+                    {/* Horizontal Push Arrow (Black & White VSM Style) */}
+                    <g transform={`translate(${x + PROCESS_WIDTH + 5}, ${y + 40})`}>
+                      {/* Black bar (shorter now) */}
+                      <rect x="-5" y="-3" width="40" height="6" fill="black" />
+                      
+                      {/* White blocks */}
+                      <rect x="4"  y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
+                      <rect x="22" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
+                      <rect x="36" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
+                      <rect x="35" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
+
+                      {/* Arrow head – moved inward & fully visible */}
+                      <polygon points="35,-10 55,0 35,10" fill="black" />
+                    </g>
+                     {/* DOWN ARROW: cutomer to → shipping */}
+                    <g transform="translate(1450, 210) scale(-1, 1)">
+                      <path
+                        d="M 0 0 L 0 200 L 60 200 L 60 180 L 100 220 L 60 260 L 60 240 L -20 240 L -20 0 Z"
+                        fill="grey"
+                        stroke="black"
+                        strokeWidth="2"
+                    
+                      />
                     </g>
                   </>
                 )}
@@ -332,36 +349,52 @@ export default function VSMPreview({
             );
           })}
 
-          {/* Shipping Box */}
-          <g transform={`translate(${300 + processes.length * PROCESS_SPACING}, ${MATERIAL_FLOW_Y - 40})`}>
+          {/* Shipping Box  */}
+          <g transform={`translate(1220, ${MATERIAL_FLOW_Y - 30})`}>
             <rect width="120" height="60" fill="white" stroke="black" strokeWidth="2"/>
             <text x="60" y="35" textAnchor="middle" fontSize="14" fontFamily="Arial" fontWeight="bold">
               Shipping
             </text>
           </g>
 
+
+
           {/* Arrow from last process to Shipping */}
-          <line
-            x1={300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH}
-            y1={MATERIAL_FLOW_Y}
-            x2={300 + processes.length * PROCESS_SPACING}
-            y2={MATERIAL_FLOW_Y}
-            stroke="black"
-            strokeWidth="2"
-            markerEnd="url(#arrowhead)"
-          />
+          <g transform={`translate(${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 5}, ${MATERIAL_FLOW_Y})`}>
+            {/* Calculate the distance to shipping box */}
+            {(() => {
+              const startX = 300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH;
+              const endX = 1215;
+              const distance = endX - startX - 20; // 20px gap before shipping
+              const numBlocks = Math.floor(distance / 18); // 18px spacing per block
+              
+              return (
+                <>
+                  {/* Black bar */}
+                  <rect x="0" y="-3" width={distance} height="6" fill="black" />
+                  
+                  {/* White blocks */}
+                  {Array.from({ length: numBlocks }).map((_, i) => (
+                    <rect 
+                      key={i}
+                      x={10 + i * 18} 
+                      y="-3" 
+                      width="10" 
+                      height="6" 
+                      fill="white" 
+                      stroke="black" 
+                      strokeWidth="1" 
+                    />
+                  ))}
+                  
+                  {/* Arrow head */}
+                  <polygon points={`${distance},-10 ${distance + 20},0 ${distance},10`} fill="black" />
+                </>
+              );
+            })()}
+          </g>
 
-          {/* Arrow from Shipping to Customer */}
-          <line
-            x1={300 + processes.length * PROCESS_SPACING + 120}
-            y1={MATERIAL_FLOW_Y - 10}
-            x2={1460}
-            y2={MATERIAL_FLOW_Y - 10}
-            stroke="black"
-            strokeWidth="2"
-            markerEnd="url(#arrowhead)"
-          />
-
+          
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
           
           {/* Lead time ladder title */}
@@ -425,13 +458,6 @@ export default function VSMPreview({
               {totalCycleTime} sec
             </text>
           </g>
-
-          {/* Arrow marker definition */}
-          <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-              <polygon points="0 0, 10 3, 0 6" fill="black"/>
-            </marker>
-          </defs>
 
         </svg>
       </div>
