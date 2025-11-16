@@ -1,6 +1,7 @@
-* 0650804 (HEAD -> main) chore: update git log
+* 5360840 (HEAD -> main) Update git logs
+* 0650804 (origin/main) chore: update git log
 * 5e62e30 preview page components
-* 25485c5 (origin/main) chore: update git log
+* 25485c5 chore: update git log
 * 2973128 Updated VSMPreview arrows, added CustomerSupplier component, and minor fixes
 * ecfcace chore: update git log
 * 756c8a8 Remove exposed API tokens
