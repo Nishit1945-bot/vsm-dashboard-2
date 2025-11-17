@@ -1,6 +1,7 @@
-* 1167a53 (HEAD -> main) chore: update git log
+* 7d7c7ef (HEAD -> main) Update VSMPreview component
+* 1167a53 (origin/main) chore: update git log
 * a605e21 preview page fixed
-* 696c46e (origin/main) chore: update git log
+* 696c46e chore: update git log
 * 1c4ba1d  analytics page pdf
 * d43c89b chore: update git log
 * 5c0957a ladder fix
