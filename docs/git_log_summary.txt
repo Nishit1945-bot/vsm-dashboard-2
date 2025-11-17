@@ -1,6 +1,7 @@
-* 59b4958 (HEAD -> main) chore: update git log
+* 4aa8c9b (HEAD -> main) arrows
+* 59b4958 (origin/main) chore: update git log
 * 5360840 Update git logs
-* 0650804 (origin/main) chore: update git log
+* 0650804 chore: update git log
 * 5e62e30 preview page components
 * 25485c5 chore: update git log
 * 2973128 Updated VSMPreview arrows, added CustomerSupplier component, and minor fixes
