@@ -1,6 +1,7 @@
-* 5684161 (HEAD -> main) chore: update git log
+* cf21afb (HEAD -> main) fixed parts analytics page
+* 5684161 (origin/main) chore: update git log
 * 2177e6b added value edit in data table
-* 4711f72 (origin/main) chore: update git log
+* 4711f72 chore: update git log
 * 7d7c7ef Update VSMPreview component
 * 1167a53 chore: update git log
 * a605e21 preview page fixed

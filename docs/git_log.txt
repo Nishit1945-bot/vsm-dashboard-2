@@ -1,3 +1,4 @@
+cf21afb | Nishit Acharya | 2025-11-17 | fixed parts analytics page
 5684161 | Nishit Acharya | 2025-11-17 | chore: update git log
 2177e6b | Nishit Acharya | 2025-11-17 | added value edit in data table
 4711f72 | Nishit Acharya | 2025-11-17 | chore: update git log
