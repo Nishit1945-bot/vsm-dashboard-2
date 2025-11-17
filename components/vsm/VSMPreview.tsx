@@ -423,7 +423,7 @@ export default function VSMPreview({
             Lead time ladder
           </text>
 
-          {/* Orange dashed border around lead time section */}
+          {/* Orange dashed border around lead time section...... */}
           <rect 
             x="40" 
             y="680" 
