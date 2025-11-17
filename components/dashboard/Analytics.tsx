@@ -184,7 +184,7 @@ export default function Analytics({
         <button
           onClick={handleExportPDF}
           disabled={isExporting}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-9√√00 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isExporting ? (
             <>
