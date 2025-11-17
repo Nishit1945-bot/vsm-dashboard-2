@@ -31,6 +31,69 @@ export default function VSMPreview({
   breakTime,
 }: VSMPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Calculate metrics
+  const totalCycleTime = processes.reduce((sum, p) => sum + (parseFloat(p.cycleTime) || 0), 0);
+  const totalLeadTime = processes.reduce((sum, p) => {
+    const inv = parseFloat(p.inventoryAfter) || 0;
+    const demand = parseInt(customerDemand) || 1;
+    return sum + (inv / demand);
+  }, 0);
+
+  const totalWidth = 1600;
+  const totalHeight = 900;
+
+  // Process layout constants
+  const PROCESS_WIDTH = 140;
+  const PROCESS_HEIGHT = 80;
+  const DATA_BOX_HEIGHT = 90;
+  const PROCESS_SPACING = 200;
+  const MATERIAL_FLOW_Y = 450;
+
+  // Export function
+  const exportAsJPG = () => {
+    if (!svgRef.current) return;
+
+    const svg = svgRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    // Set canvas size
+    canvas.width = totalWidth;
+    canvas.height = totalHeight;
+
+    // Create blob from SVG
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      // Fill white background
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        // Convert to JPG and download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `VSM-${taskName || 'diagram'}.jpg`;
+            link.click();
+            URL.revokeObjectURL(downloadUrl);
+          }
+        }, 'image/jpeg', 0.95);
+      }
+
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  };
 
   if (processes.length === 0) {
     return (
@@ -61,24 +124,6 @@ export default function VSMPreview({
     );
   }
 
-  // Calculate metrics
-  const totalCycleTime = processes.reduce((sum, p) => sum + (parseFloat(p.cycleTime) || 0), 0);
-  const totalLeadTime = processes.reduce((sum, p) => {
-    const inv = parseFloat(p.inventoryAfter) || 0;
-    const demand = parseInt(customerDemand) || 1;
-    return sum + (inv / demand);
-  }, 0);
-
-  const totalWidth = 1600;
-  const totalHeight = 900;
-
-  // Process layout constants
-  const PROCESS_WIDTH = 140;
-  const PROCESS_HEIGHT = 80;
-  const DATA_BOX_HEIGHT = 90;
-  const PROCESS_SPACING = 200;
-  const MATERIAL_FLOW_Y = 450;
-
   return (
     <div className="h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
@@ -90,12 +135,23 @@ export default function VSMPreview({
               Complete VSM with all three sections
             </p>
           </div>
+          <div className="flex gap-2">
+            <button
+              onClick={exportAsJPG}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export JPG
+            </button>
+          </div>
         </div>
       </div>
 
       {/* VSM Canvas - Pure SVG */}
       <div className="overflow-auto p-8" ref={containerRef}>
-        <svg width={totalWidth} height={totalHeight} className="mx-auto bg-white">
+        <svg ref={svgRef} width={totalWidth} height={totalHeight} className="mx-auto bg-white">
           <defs>
             {/* Blue gradient for factory boxes */}
             <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -501,7 +557,7 @@ export default function VSMPreview({
                       <rect 
                         x={baseX} 
                         y={upY - 50} 
-                        width="00" 
+                        width="0" 
                         height="0" 
                         fill="white" 
                         stroke="white" 
