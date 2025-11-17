@@ -51,6 +51,24 @@ export default function VSMPreview({
   const PROCESS_SPACING = 200;
   const MATERIAL_FLOW_Y = 450;
 
+  // Scroll functions for vertical navigation
+  const scrollToTop = () => {
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToMiddle = () => {
+    if (containerRef.current) {
+      const middlePosition = containerRef.current.scrollHeight / 2 - containerRef.current.clientHeight / 2;
+      containerRef.current.scrollTo({ top: middlePosition, behavior: 'smooth' });
+    }
+  };
+
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
   // Export function
   const exportAsJPG = () => {
     if (!svgRef.current) return;
@@ -125,7 +143,7 @@ export default function VSMPreview({
   }
 
   return (
-    <div className="h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -143,14 +161,45 @@ export default function VSMPreview({
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export JPG
+              Export Image
             </button>
           </div>
         </div>
       </div>
 
+      {/* Floating Navigation Buttons */}
+      <div className="absolute left-0 top-32 z-10 flex flex-col gap-2">
+        <button
+          onClick={scrollToTop}
+          className="p-3 bg-white border-2 border-green-100 rounded-lg shadow-lg hover:bg-green-50 transition-colors"
+          title="Information flows"
+        >
+          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+        <button
+          onClick={scrollToMiddle}
+          className="p-3 bg-white border-2 border-purple-100 rounded-lg shadow-lg hover:bg-purple-50 transition-colors"
+          title="Material flows"
+        >
+          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+        </button>
+        <button
+          onClick={scrollToBottom}
+          className="p-3 bg-white border-2 border-orange-100 rounded-lg shadow-lg hover:bg-orange-50 transition-colors"
+          title="Lead time ladder"
+        >
+          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+      </div>
+
       {/* VSM Canvas - Pure SVG */}
-      <div className="overflow-auto p-8" ref={containerRef}>
+      <div className="overflow-auto p-8 h-[calc(100%-88px)]" ref={containerRef}>
         <svg ref={svgRef} width={totalWidth} height={totalHeight} className="mx-auto bg-white">
           <defs>
             {/* Blue gradient for factory boxes */}
@@ -371,10 +420,6 @@ export default function VSMPreview({
                       />
                     </g>
 
-                    
-                    
-                    
-                    
                     {/* Horizontal Push Arrow  */}
                     <g transform={`translate(${x + PROCESS_WIDTH + 5}, ${y + 40})`}>
                       {/* Black bar  */}
@@ -434,8 +479,6 @@ export default function VSMPreview({
                       />
                     </g>
 
-
-
           {/* Arrow from last process to Shipping */}
           <g transform={`translate(${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 5}, ${MATERIAL_FLOW_Y})`}>
             {/* Calculate the distance to shipping box */}
@@ -470,8 +513,6 @@ export default function VSMPreview({
               );
             })()}
           </g>
-          
-
           
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
 
