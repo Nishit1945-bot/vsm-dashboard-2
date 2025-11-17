@@ -1,6 +1,7 @@
-* 8da0698 (HEAD -> main) chore: update git log
+* 3e1fdee (HEAD -> main) design fix
+* 8da0698 (origin/main) chore: update git log
 * 3cfe970 Update VSMPreview and docs
-* fb76fc8 (origin/main) chore: update git log
+* fb76fc8 chore: update git log
 * 4aa8c9b arrows
 * 59b4958 chore: update git log
 * 5360840 Update git logs
