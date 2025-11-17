@@ -333,15 +333,7 @@ export default function VSMPreview({
                       {/* Arrow head  */}
                       <polygon points="35,-10 55,0 35,10" fill="black" />
                     </g>
-                     {/* DOWN ARROW: Customer → Shipping (LEFT TO RIGHT, THEN UP) */}
-                    <g transform="translate(1350, 450)">
-                      <path
-                        d="M 0 0 L 100 0 L 100 -180 L 80 -180 L 120 -240 L 160 -180 L 140 -180 L 140 20 L 0 20 Z"
-                        fill="grey"
-                        stroke="black"
-                        strokeWidth="2"
-                      />
-                    </g>
+                    
                   </>
                 )}
               </g>
@@ -376,6 +368,15 @@ export default function VSMPreview({
               Shipping
             </text>
           </g>
+           {/* DOWN ARROW: Customer → Shipping (LEFT TO RIGHT, THEN UP) */}
+                    <g transform="translate(1350, 450)">
+                      <path
+                        d="M 0 0 L 100 0 L 100 -180 L 80 -180 L 120 -240 L 160 -180 L 140 -180 L 140 20 L 0 20 Z"
+                        fill="grey"
+                        stroke="black"
+                        strokeWidth="2"
+                      />
+                    </g>
 
 
 
