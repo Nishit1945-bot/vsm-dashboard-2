@@ -1,6 +1,7 @@
-* 4711f72 (HEAD -> main) chore: update git log
+* 2177e6b (HEAD -> main) added value edit in data table
+* 4711f72 (origin/main) chore: update git log
 * 7d7c7ef Update VSMPreview component
-* 1167a53 (origin/main) chore: update git log
+* 1167a53 chore: update git log
 * a605e21 preview page fixed
 * 696c46e chore: update git log
 * 1c4ba1d  analytics page pdf
