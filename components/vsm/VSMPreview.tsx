@@ -217,7 +217,7 @@ export default function VSMPreview({
           {/* DOWN ARROW: Supplier → First Process */}
           <g transform="translate(155, 210)">
             <path
-              d="M 0 0 L 0 200 L 60 200 L 60 180 L 100 220 L 60 260 L 60 240 L -20 240 L -20 0 Z"
+              d="M 0 0 L 0 200 L 60 200 L 60 180 L 100 220 L 60 260 L 60 240 L -20 240 L -20 0 Z"  
               fill="grey"
               stroke="black"
               strokeWidth="2"
@@ -319,9 +319,9 @@ export default function VSMPreview({
                     
                     
                     
-                    {/* Horizontal Push Arrow (Black & White VSM Style) */}
+                    {/* Horizontal Push Arrow  */}
                     <g transform={`translate(${x + PROCESS_WIDTH + 5}, ${y + 40})`}>
-                      {/* Black bar (shorter now) */}
+                      {/* Black bar  */}
                       <rect x="-5" y="-3" width="40" height="6" fill="black" />
                       
                       {/* White blocks */}
@@ -330,17 +330,16 @@ export default function VSMPreview({
                       <rect x="36" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
                       <rect x="35" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
 
-                      {/* Arrow head – moved inward & fully visible */}
+                      {/* Arrow head  */}
                       <polygon points="35,-10 55,0 35,10" fill="black" />
                     </g>
-                     {/* DOWN ARROW: cutomer to → shipping */}
-                    <g transform="translate(1450, 210) scale(-1, 1)">
+                     {/* DOWN ARROW: Customer → Shipping (LEFT TO RIGHT, THEN UP) */}
+                    <g transform="translate(1350, 450)">
                       <path
-                        d="M 0 0 L 0 200 L 60 200 L 60 180 L 100 220 L 60 260 L 60 240 L -20 240 L -20 0 Z"
+                        d="M 0 0 L 100 0 L 100 -180 L 80 -180 L 120 -240 L 160 -180 L 140 -180 L 140 20 L 0 20 Z"
                         fill="grey"
                         stroke="black"
                         strokeWidth="2"
-                    
                       />
                     </g>
                   </>
@@ -348,6 +347,27 @@ export default function VSMPreview({
               </g>
             );
           })}
+          {/* Inventory Triangle AFTER LAST PROCESS */}
+          {processes.length > 0 && (
+            <>
+              <polygon 
+                points={`${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 30},${MATERIAL_FLOW_Y + 55} ${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 10},${MATERIAL_FLOW_Y + 95} ${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 50},${MATERIAL_FLOW_Y + 95}`}
+                fill="yellow"
+                stroke="black"
+                strokeWidth="2"
+              />
+              <text 
+                x={300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 30} 
+                y={MATERIAL_FLOW_Y + 115} 
+                textAnchor="middle" 
+                fontSize="12" 
+                fontFamily="Arial" 
+                fontWeight="bold"
+              >
+                {processes[processes.length - 1]?.inventoryAfter || '0'}
+              </text>
+            </>
+          )}
 
           {/* Shipping Box  */}
           <g transform={`translate(1220, ${MATERIAL_FLOW_Y - 30})`}>
@@ -365,7 +385,7 @@ export default function VSMPreview({
             {(() => {
               const startX = 300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH;
               const endX = 1215;
-              const distance = endX - startX - 20; // 20px gap before shipping
+              const distance = endX - startX - 20; 
               const numBlocks = Math.floor(distance / 18); // 18px spacing per block
               
               return (
@@ -393,6 +413,7 @@ export default function VSMPreview({
               );
             })()}
           </g>
+          
 
           
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
