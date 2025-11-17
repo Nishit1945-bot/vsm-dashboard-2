@@ -1,6 +1,7 @@
-* 696c46e (HEAD -> main) chore: update git log
+* a605e21 (HEAD -> main) preview page fixed
+* 696c46e (origin/main) chore: update git log
 * 1c4ba1d  analytics page pdf
-* d43c89b (origin/main) chore: update git log
+* d43c89b chore: update git log
 * 5c0957a ladder fix
 * 46706c9 chore: update git log
 * 3e1fdee design fix
