@@ -418,13 +418,13 @@ export default function VSMPreview({
 
           
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
-          
+
           {/* Lead time ladder title */}
           <text x="800" y="660" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#F97316">
             Lead time ladder
           </text>
 
-          {/* Orange dashed border around lead time section...... */}
+          {/* Orange dashed border around lead time section */}
           <rect 
             x="40" 
             y="680" 
@@ -437,47 +437,135 @@ export default function VSMPreview({
             rx="15"
           />
 
-          {/* Timeline boxes for each process */}
-          {processes.map((process, index) => {
-            const x = 300 + index * PROCESS_SPACING;
-            const leadTimeDays = (parseFloat(process.inventoryAfter) || 0) / (parseInt(customerDemand) || 1);
+          {/* Main timeline horizontal line (baseline) */}
+          <line 
+            x1="250" 
+            y1="760" 
+            x2={250 + processes.length * 140 + 850} 
+            y2="760" 
+            stroke="black" 
+            strokeWidth="2"
+          />
+
+          {/* Build the lead time ladder */}
+          {(() => {
+            const baselineY = 760;
+            const upY = 720;
+            const downY = 800;
+            
+            let pathData = `M 250 ${baselineY}`;
+            let currentX = 250;
+
+            processes.forEach((process, index) => {
+              const leadTimeDays = (parseFloat(process.inventoryAfter) || 0) / (parseInt(customerDemand) || 1);
+              
+              const leadTimeWidth = 70;
+              const processingWidth = 70;
+
+              // 1. DOWN for inventory/waiting time (lead time)
+              pathData += ` L ${currentX} ${downY}`;
+              pathData += ` L ${currentX + leadTimeWidth} ${downY}`;
+              pathData += ` L ${currentX + leadTimeWidth} ${baselineY}`;
+              
+              currentX += leadTimeWidth;
+
+              // 2. UP for processing/value-adding time (cycle time)
+              pathData += ` L ${currentX} ${upY}`;
+              pathData += ` L ${currentX + processingWidth} ${upY}`;
+              pathData += ` L ${currentX + processingWidth} ${baselineY}`;
+              
+              currentX += processingWidth;
+            });
+
+            pathData += ` L ${currentX + 850} ${baselineY}`;
 
             return (
-              <g key={`timeline-${process.id}`}>
-                {/* Lead time box (days) */}
-                <rect x={x} y="710" width={PROCESS_WIDTH} height="50" fill="white" stroke="black" strokeWidth="2"/>
-                <text x={x + PROCESS_WIDTH / 2} y="740" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
-                  {leadTimeDays.toFixed(1)} days
-                </text>
+              <>
+                {/* Main ladder path */}
+                <path 
+                  d={pathData}
+                  fill="none"
+                  stroke="black" 
+                  strokeWidth="2"
+                />
 
-                {/* Process time box (seconds) */}
-                <rect x={x} y="770" width={PROCESS_WIDTH} height="40" fill="white" stroke="black" strokeWidth="2"/>
-                <text x={x + PROCESS_WIDTH / 2} y="795" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
-                  {process.cycleTime} sec
-                </text>
+                {/* Labels and boxes for each process */}
+                {processes.map((process, index) => {
+                  const baseX = 250 + index * 140;
+                  const leadTimeDays = (parseFloat(process.inventoryAfter) || 0) / (parseInt(customerDemand) || 1);
+                  const cycleTimeSec = parseFloat(process.cycleTime) || 0;
 
-                {/* Connecting line to next process */}
-                {index < processes.length - 1 && (
-                  <line x1={x + PROCESS_WIDTH} y1="735" x2={x + PROCESS_SPACING} y2="735" stroke="black" strokeWidth="2"/>
-                )}
-              </g>
+                  return (
+                    <g key={`timeline-${process.id}`}>
+                      {/* Lead time box - ON TOP (above baseline) */}
+                      <rect 
+                        x={baseX} 
+                        y={upY - 50} 
+                        width="00" 
+                        height="0" 
+                        fill="white" 
+                        stroke="white" 
+                        strokeWidth="2"
+                      />
+                      <text 
+                        x={baseX + 105} 
+                        y={upY + 25} 
+                        textAnchor="middle" 
+                        fontSize="13" 
+                        fontFamily="Arial" 
+                        fontWeight="bold"
+                      >
+                        {leadTimeDays.toFixed(1)} days
+                      </text>
+
+                      {/* Cycle time box - ON BOTTOM (below baseline) */}
+                      <rect 
+                        x={baseX + 70} 
+                        y={downY + 10} 
+                        width="0" 
+                        height="0" 
+                        fill="white" 
+                        stroke="white" 
+                        strokeWidth="2"
+                      />
+                      <text 
+                        x={baseX + 35} 
+                        y={downY - 10} 
+                        textAnchor="middle" 
+                        fontSize="13" 
+                        fontFamily="Arial" 
+                        fontWeight="bold"
+                      >
+                        {cycleTimeSec} sec
+                      </text>
+                    </g>
+                  );
+                })}
+              </>
             );
-          })}
+          })()}
 
-          {/* Summary box */}
-          <g transform={`translate(${300 + processes.length * PROCESS_SPACING + 50}, 710)`}>
-            <rect width="200" height="100" fill="#FEF3C7" stroke="black" strokeWidth="2"/>
-            <text x="10" y="25" fontSize="12" fontFamily="Arial" fontWeight="bold">
-              Production lead time =
+          {/* Summary box - Production lead time & Processing time */}
+          <g transform={`translate(${250 + processes.length * 140 + 50}, ${740})`}>
+            {/* Box background */}
+            <rect 
+              x="700" 
+              y="-30" 
+              width="250" 
+              height="80" 
+              fill="white" 
+              stroke="black" 
+              strokeWidth="2"
+            />
+            
+            {/* Production lead time */}
+            <text x="825" y="0" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
+              Production lead time = {totalLeadTime.toFixed(1)} days
             </text>
-            <text x="100" y="45" textAnchor="middle" fontSize="14" fontFamily="Arial" fontWeight="bold">
-              {totalLeadTime.toFixed(1)} days
-            </text>
-            <text x="10" y="70" fontSize="12" fontFamily="Arial" fontWeight="bold">
-              Processing time =
-            </text>
-            <text x="100" y="90" textAnchor="middle" fontSize="14" fontFamily="Arial" fontWeight="bold">
-              {totalCycleTime} sec
+            
+            {/* Processing time */}
+            <text x="825" y="30" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
+              Processing time = {totalCycleTime} sec
             </text>
           </g>
 
