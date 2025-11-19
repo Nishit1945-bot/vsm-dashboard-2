@@ -1,6 +1,7 @@
-* cff1c93 (HEAD -> main) chore: update git log
+* 4d758bd (HEAD -> main) csv handle
+* cff1c93 (origin/main) chore: update git log
 * 3735019  elements fixed
-* 3e6b9e7 (origin/main) chore: update git log
+* 3e6b9e7 chore: update git log
 * cf21afb fixed parts analytics page
 * 5684161 chore: update git log
 * 2177e6b added value edit in data table
