@@ -513,7 +513,6 @@ export default function VSMPreview({
           </g>
           
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
-
           {/* Lead time ladder title */}
           <text x="800" y="660" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#F97316">
             Lead time ladder
@@ -523,7 +522,7 @@ export default function VSMPreview({
           <rect 
             x="40" 
             y="680" 
-            width="1520" 
+            width={Math.max(1520, 250 + processes.length * 140 + 400)} 
             height="180" 
             fill="none" 
             stroke="#F97316" 
@@ -536,7 +535,7 @@ export default function VSMPreview({
           <line 
             x1="250" 
             y1="760" 
-            x2={250 + processes.length * 140 + 850} 
+            x2={250 + processes.length * 140+100} 
             y2="760" 
             stroke="black" 
             strokeWidth="2"
@@ -572,8 +571,6 @@ export default function VSMPreview({
               currentX += processingWidth;
             });
 
-            pathData += ` L ${currentX + 850} ${baselineY}`;
-
             return (
               <>
                 {/* Main ladder path */}
@@ -592,18 +589,9 @@ export default function VSMPreview({
 
                   return (
                     <g key={`timeline-${process.id}`}>
-                      {/* Lead time box - ON TOP (above baseline) */}
-                      <rect 
-                        x={baseX} 
-                        y={upY - 50} 
-                        width="0" 
-                        height="0" 
-                        fill="white" 
-                        stroke="white" 
-                        strokeWidth="2"
-                      />
+                      {/* Lead time label - ON TOP (above baseline) */}
                       <text 
-                        x={baseX + 105} 
+                        x={baseX + 35} 
                         y={upY + 25} 
                         textAnchor="middle" 
                         fontSize="13" 
@@ -613,18 +601,9 @@ export default function VSMPreview({
                         {leadTimeDays.toFixed(1)} days
                       </text>
 
-                      {/* Cycle time box - ON BOTTOM (below baseline) */}
-                      <rect 
-                        x={baseX + 70} 
-                        y={downY + 10} 
-                        width="0" 
-                        height="0" 
-                        fill="white" 
-                        stroke="white" 
-                        strokeWidth="2"
-                      />
+                      {/* Cycle time label - ON BOTTOM (below baseline) */}
                       <text 
-                        x={baseX + 35} 
+                        x={baseX + 105} 
                         y={downY - 10} 
                         textAnchor="middle" 
                         fontSize="13" 
@@ -641,25 +620,25 @@ export default function VSMPreview({
           })()}
 
           {/* Summary box - Production lead time & Processing time */}
-          <g transform={`translate(${250 + processes.length * 140 + 50}, ${740})`}>
+          <g transform={`translate(${250 + processes.length * 140 + 100}, ${740})`}>
             {/* Box background */}
             <rect 
-              x="700" 
+              x="0" 
               y="-30" 
-              width="250" 
-              height="80" 
+              width="300" 
+              height="90" 
               fill="white" 
               stroke="black" 
               strokeWidth="2"
             />
             
             {/* Production lead time */}
-            <text x="825" y="0" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
+            <text x="150" y="0" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
               Production lead time = {totalLeadTime.toFixed(1)} days
             </text>
             
             {/* Processing time */}
-            <text x="825" y="30" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
+            <text x="150" y="30" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
               Processing time = {totalCycleTime} sec
             </text>
           </g>
