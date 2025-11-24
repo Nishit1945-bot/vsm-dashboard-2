@@ -1,6 +1,7 @@
 // components/dashboard/Dashboard.tsx
 'use client';
 import Analytics from './Analytics';
+import PredictiveAnalytics from './PredictiveAnalytics';
 import { useState, useEffect } from 'react';
 import ChatInterface from '@/components/chat/ChatInterface';
 import DataEntryPanel from './DataEntryPanel';
@@ -33,6 +34,8 @@ interface ChatData {
   workingHours: string;
   breakTime: string;
   processes: Process[];
+  csvData?: any[];
+  dataType?: string;
 }
 
 interface DashboardProps {
@@ -41,7 +44,7 @@ interface DashboardProps {
   messages: Message[];
   isLoading: boolean;
   onSendMessage: (content: string) => void;
-  activeTab: 'chat' | 'data' | 'preview' | 'analytics';
+  activeTab: 'chat' | 'data' | 'preview' | 'analytics' | 'ai-analytics';
 }
 
 const STORAGE_KEY = 'vsm_chat_data';
@@ -83,6 +86,8 @@ export default function Dashboard({
     workingHours: '8',
     breakTime: '30',
     processes: [],
+    csvData: [],
+    dataType: 'process',
   };
 
   // Update data for current chat
@@ -148,7 +153,19 @@ export default function Dashboard({
             workingHours={currentData.workingHours}
             breakTime={currentData.breakTime}
           />
-)}
+        )}
+
+        {activeTab === 'ai-analytics' && (
+          <PredictiveAnalytics
+            taskName={currentData.taskName}
+            customerDemand={currentData.customerDemand}
+            processes={currentData.processes}
+            workingHours={currentData.workingHours}
+            breakTime={currentData.breakTime}
+            csvData={currentData.csvData || []}
+            dataType={currentData.dataType || 'process'}
+          />
+        )}
       </div>
 
       {activeTab === 'chat' && (
@@ -165,6 +182,8 @@ export default function Dashboard({
             onWorkingHoursChange={(value) => updateChatData({ workingHours: value })}
             onBreakTimeChange={(value) => updateChatData({ breakTime: value })}
             onProcessesChange={(processes) => updateChatData({ processes })}
+            onCsvDataChange={(data, type) => updateChatData({ csvData: data, dataType: type })}
+            onDatasetUploaded={(type) => console.log('Dataset uploaded:', type)}
           />
         </div>
       )}

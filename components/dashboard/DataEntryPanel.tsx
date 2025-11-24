@@ -29,6 +29,8 @@ interface DataEntryPanelProps {
   onWorkingHoursChange: (value: string) => void;
   onBreakTimeChange: (value: string) => void;
   onProcessesChange: (processes: Process[]) => void;
+  onCsvDataChange?: (data: any[], dataType: string) => void;
+  onDatasetUploaded?: (datasetType: string) => void;
 }
 
 export default function DataEntryPanel({
@@ -43,9 +45,20 @@ export default function DataEntryPanel({
   onWorkingHoursChange,
   onBreakTimeChange,
   onProcessesChange,
+  onCsvDataChange,
+  onDatasetUploaded,
 }: DataEntryPanelProps) {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
+
+  const detectDataType = (headers: string[]): string => {
+    // Detect dataset type based on column headers
+    if (headers.includes('FaultDuration') || headers.includes('Fault Duration')) return 'fault';
+    if (headers.includes('UnblockingTable')) return 'performance';
+    if (headers.includes('FaultyCount') || headers.includes('Faulty Count')) return 'quality';
+    if (headers.includes('H00_00_00')) return 'production';
+    return 'process';
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,7 +80,12 @@ export default function DataEntryPanel({
       const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
       console.log('📋 Headers found:', headers);
 
-      // Parse data rows
+      // Detect data type
+      const dataType = detectDataType(headers);
+      console.log('🔍 Detected data type:', dataType);
+
+      // Parse all data rows for AI-Analytics
+      const allData: any[] = [];
       const newProcesses: Process[] = [];
       
       for (let i = 1; i < lines.length; i++) {
@@ -82,35 +100,56 @@ export default function DataEntryPanel({
           row[header] = values[idx] || '';
         });
 
+        allData.push(row);
         console.log(`Row ${i}:`, row);
 
-        // Map to Process with multiple column name variations
-        const process: Process = {
-          id: Date.now() + i + Math.random(), // Ensure unique IDs
-          name: row['Process Step'] || row['Process Name'] || row['Process'] || row['Step'] || row['Operation'] || `Process ${i}`,
-          cycleTime: row['Cycle Time (min)'] || row['Cycle Time'] || row['CT'] || row['C/T'] || row['CycleTime'] || '',
-          changeoverTime: row['Changeover Time (min)'] || row['Changeover Time'] || row['Changeover'] || row['Setup Time'] || row['C/O'] || row['CO'] || '',
-          uptime: row['Uptime %'] || row['Uptime'] || row['Availability'] || row['Available %'] || '',
-          operators: row['Operators'] || row['Number of Operators'] || row['Workers'] || row['People'] || '1',
-          shifts: row['Shifts'] || row['Number of Shifts'] || '2',
-          availableTime: row['Available Time'] || row['Available Time (sec)'] || ((parseInt(workingHours) * 60 - parseInt(breakTime)) * 60).toString(),
-          inventoryAfter: row['WIP Inventory'] || row['Inventory'] || row['Stock'] || row['Quantity'] || row['WIP'] || '',
-          isAutoFilled: true
-        };
-        
-        newProcesses.push(process);
-        console.log(`✅ Process ${i} mapped:`, process);
+        // Map to Process for VSM (only if it's process data)
+        if (dataType === 'process') {
+          const process: Process = {
+            id: Date.now() + i + Math.random(),
+            name: row['Process Step'] || row['Process Name'] || row['Process'] || row['Step'] || row['Operation'] || `Process ${i}`,
+            cycleTime: row['Cycle Time (min)'] || row['Cycle Time'] || row['CT'] || row['C/T'] || row['CycleTime'] || '',
+            changeoverTime: row['Changeover Time (min)'] || row['Changeover Time'] || row['Changeover'] || row['Setup Time'] || row['C/O'] || row['CO'] || '',
+            uptime: row['Uptime %'] || row['Uptime'] || row['Availability'] || row['Available %'] || '',
+            operators: row['Operators'] || row['Number of Operators'] || row['Workers'] || row['People'] || '1',
+            shifts: row['Shifts'] || row['Number of Shifts'] || '2',
+            availableTime: row['Available Time'] || row['Available Time (sec)'] || ((parseInt(workingHours) * 60 - parseInt(breakTime)) * 60).toString(),
+            inventoryAfter: row['WIP Inventory'] || row['Inventory'] || row['Stock'] || row['Quantity'] || row['WIP'] || '',
+            isAutoFilled: true
+          };
+          
+          newProcesses.push(process);
+          console.log(`✅ Process ${i} mapped:`, process);
+        }
       }
 
-      console.log('🎉 Total processes extracted:', newProcesses.length);
-      console.log('Full process array:', newProcesses);
+      console.log('🎉 Total data rows:', allData.length);
+      console.log('📊 Full dataset:', allData);
       
-      // Update state using the prop callback
-      onProcessesChange(newProcesses);
+      // Pass raw CSV data to AI-Analytics
+      if (onCsvDataChange) {
+        onCsvDataChange(allData, dataType);
+        console.log('📤 Data passed to AI-Analytics');
+      }
+
+      // Pass dataset type notification
+      if (onDatasetUploaded) {
+        onDatasetUploaded(dataType);
+        console.log('🔔 Dataset type notification sent:', dataType);
+      }
+
+      // Update processes for VSM (only if process data)
+      if (dataType === 'process' && newProcesses.length > 0) {
+        onProcessesChange(newProcesses);
+        console.log('✅ Processes updated for VSM');
+      }
       
       // Success feedback
       setUploadStatus('success');
-      setUploadMessage(`Successfully loaded ${newProcesses.length} processes from ${file.name}`);
+      const message = dataType === 'process' 
+        ? `Successfully loaded ${newProcesses.length} processes from ${file.name}`
+        : `Successfully loaded ${allData.length} ${dataType} records from ${file.name}`;
+      setUploadMessage(message);
       
       // Clear success message after 5 seconds
       setTimeout(() => {

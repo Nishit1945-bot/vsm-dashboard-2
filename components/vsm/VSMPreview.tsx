@@ -1,7 +1,7 @@
 // components/vsm/VSMPreview.tsx
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 
 interface Process {
   id: number;
@@ -41,15 +41,34 @@ export default function VSMPreview({
     return sum + (inv / demand);
   }, 0);
 
-  const totalWidth = 1600;
-  const totalHeight = 900;
+  // Dynamic width calculation based on number of processes
+  const { totalWidth, totalHeight, PROCESS_SPACING } = useMemo(() => {
+    const minWidth = 1600;
+    const baseSpacing = 200;
+    const processCount = processes.length;
+    
+    // Calculate required width: processes + shipping + margins
+    // Left margin (250) + processes (340 each) + shipping area (300) + right margin (200)
+    const calculatedWidth = Math.max(
+      minWidth,
+      250 + (processCount * 340) + 300 + 200
+    );
+    
+    return {
+      totalWidth: calculatedWidth,
+      totalHeight: 900,
+      PROCESS_SPACING: baseSpacing
+    };
+  }, [processes.length]);
 
   // Process layout constants
   const PROCESS_WIDTH = 140;
   const PROCESS_HEIGHT = 80;
   const DATA_BOX_HEIGHT = 90;
-  const PROCESS_SPACING = 200;
   const MATERIAL_FLOW_Y = 450;
+
+  // Calculate shipping box X position (aligned with where arrow points)
+  const shippingBoxX = 300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 60;
 
   // Scroll functions for vertical navigation
   const scrollToTop = () => {
@@ -79,7 +98,7 @@ export default function VSMPreview({
     const ctx = canvas.getContext('2d');
     const img = new Image();
 
-    // Set canvas size
+    // Set canvas size to match dynamic SVG size
     canvas.width = totalWidth;
     canvas.height = totalHeight;
 
@@ -134,7 +153,6 @@ export default function VSMPreview({
           <p className="text-sm text-gray-500 mb-4">
             Add processes in the form to generate your Value Stream Map
           </p>
-          
         </div>
       </div>
     );
@@ -148,13 +166,13 @@ export default function VSMPreview({
           <div>
             <h2 className="text-xl font-bold text-gray-900">{taskName || 'Value Stream Map'}</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Complete VSM with all three sections
+              Complete VSM with all three sections • {processes.length} processes
             </p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={exportAsJPG}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-900 hover:text-white transition-colors shadow-sm"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -196,7 +214,7 @@ export default function VSMPreview({
         </button>
       </div>
 
-      {/* VSM Canvas - Pure SVG */}
+      {/* VSM Canvas - Pure SVG with horizontal scroll */}
       <div className="overflow-auto p-8 h-[calc(100%-88px)]" ref={containerRef}>
         <svg ref={svgRef} width={totalWidth} height={totalHeight} className="mx-auto bg-white">
           <defs>
@@ -214,15 +232,17 @@ export default function VSMPreview({
           {/* ========== SECTION 1: INFORMATION FLOWS ========== */}
           
           {/* Information flows title */}
-          <text x="800" y="30" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#22C55E">
-            Information flows
-          </text>
+            <text 
+              x={(40 + (shippingBoxX + 600 - 40)) / 2} y="30" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#22C55E" 
+            >
+              Information flows
+            </text>
 
           {/* Green dashed border around information flow section */}
           <rect 
             x="40" 
             y="50" 
-            width="1520" 
+            width={shippingBoxX + 250 + 150 + 50 - 80} 
             height="230" 
             fill="none" 
             stroke="#22C55E" 
@@ -246,7 +266,7 @@ export default function VSMPreview({
           </g>
 
           {/* Production Control / Admin (CENTER) */}
-          <g transform="translate(680, 100)">
+          <g transform={`translate(${((shippingBoxX + 600) / 2) - 110}, 100)`}>
             <rect x="0" y="0" width="220" height="130" fill="white" stroke="black" strokeWidth="3"/>
             <rect x="15" y="15" width="190" height="45" fill="#E5E7EB" stroke="black" strokeWidth="2"/>
             <text x="110" y="45" textAnchor="middle" fontSize="18" fontFamily="Arial" fontWeight="bold">
@@ -260,8 +280,8 @@ export default function VSMPreview({
             </text>
           </g>
 
-          {/* Customer (RIGHT) */}
-          <g transform="translate(1430, 120)">
+          {/* Customer (RIGHT) - ALIGNED WITH SHIPPING BOX */}
+          <g transform={`translate(${shippingBoxX + 250}, 120)`}>
             <rect x="-40" y="20" width="150" height="60" fill="url(#blueGradient)" stroke="black" strokeWidth="3"/>
             <path 
               d="M -40 20 L -2.5 5 L -2.5 20 L 35 5 L 35 20 L 72.5 5 L 72.5 20 L 110 5 L 110 20"
@@ -275,21 +295,52 @@ export default function VSMPreview({
           </g>
 
           {/* Arrow: Customer → Admin */}
-          <g transform="translate(910, 155)">
-            <path d="M 480 -10 L 250 -10 L 270 10 L 0 10" stroke="black" strokeWidth="2" fill="none"/>
-            <polygon points="20,3 0,10 20,17" fill="black"/>
+          <g transform={`translate(${((shippingBoxX + 600) / 2) + 110}, 155)`}>
+            {(() => {
+              const distance = (shippingBoxX + 210) - (((shippingBoxX + 600) / 2) + 110);
+              const zigzagWidth = Math.min(650, Math.max(50, distance * 0.4)); // Dynamic width between 50-250
+              const straightWidth = Math.max(20, distance - zigzagWidth - 20); // Remaining distance
+              
+              return (
+                <>
+                  <path 
+                    d={`M ${distance} -10 L ${zigzagWidth} -10 L ${zigzagWidth + 20} 10 L 0 10`} 
+                    stroke="black" 
+                    strokeWidth="2" 
+                    fill="none"
+                  />
+                  <polygon points="20,3 0,10 20,17" fill="black"/>
+                </>
+              );
+            })()}
           </g>
 
-          {/* Arrow: Admin → Supplier */}
-          <g transform="translate(240, 155)">
-            <path d="M 440 -10 L 220 -10 L 240 10 L 0 10" stroke="black" strokeWidth="2" fill="none"/>
-            <polygon points="20,3 0,10 20,17" fill="black"/>
-          </g>
+         {/* Arrow: Admin → Supplier */}
+        <g transform={`translate(${80 + 150}, 155)`}>
+          {(() => {
+            const distance = ((shippingBoxX + 600) / 2) - 110 - (80 + 150);
+            const zigzagWidth = Math.min(220, Math.max(50, distance * 0.4)); // Dynamic width between 50-220
+            const diagonalOffset = Math.min(20, distance * 0.08); // Dynamic diagonal offset
+            
+            return (
+              <>
+                <path 
+                  d={`M ${distance} -10 L ${zigzagWidth} -10 L ${zigzagWidth + diagonalOffset} 10 L 0 10`}
+                  stroke="black" 
+                  strokeWidth="2" 
+                  fill="none"
+                />
+                <polygon points="20,3 0,10 20,17" fill="black"/>
+              </>
+            );
+          })()}
+        </g>
 
           {/* ========== SECTION 2: MATERIAL FLOWS ========== */}
           
           {/* Material flows title */}
-          <text x="800" y="320" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#9333EA">
+          <text 
+            x={(40 + (shippingBoxX + 600 - 40)) / 2} y="320" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#9333EA">
             Material flows
           </text>
 
@@ -297,7 +348,7 @@ export default function VSMPreview({
           <rect 
             x="40" 
             y="340" 
-            width="1520" 
+            width={shippingBoxX + 250 + 150 + 50 - 80} 
             height="280" 
             fill="none" 
             stroke="#9333EA" 
@@ -327,8 +378,8 @@ export default function VSMPreview({
             />
           </g>
 
-          {/* Truck under Customer (right) */}
-          <g transform="translate(1500, 370)">
+          {/* Truck under Customer (right) - ALIGNED WITH CUSTOMER */}
+          <g transform={`translate(${shippingBoxX + 180}, 370)`}>
             <rect x="15" y="8" width="35" height="15" fill="black" stroke="black" strokeWidth="2"/>
             <rect x="5" y="13" width="15" height="10" fill="black" stroke="black" strokeWidth="2"/>
             <circle cx="15" cy="25" r="4" fill="white" stroke="black" strokeWidth="2"/>
@@ -420,24 +471,19 @@ export default function VSMPreview({
 
                     {/* Horizontal Push Arrow  */}
                     <g transform={`translate(${x + PROCESS_WIDTH + 5}, ${y + 40})`}>
-                      {/* Black bar  */}
                       <rect x="-5" y="-3" width="40" height="6" fill="black" />
-                      
-                      {/* White blocks */}
                       <rect x="4"  y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
                       <rect x="22" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
                       <rect x="36" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
                       <rect x="35" y="-3" width="10" height="6" fill="white" stroke="black" strokeWidth="1" />
-
-                      {/* Arrow head  */}
                       <polygon points="35,-10 55,0 35,10" fill="black" />
                     </g>
-                    
                   </>
                 )}
               </g>
             );
           })}
+
           {/* Inventory Triangle AFTER LAST PROCESS */}
           {processes.length > 0 && (
             <>
@@ -460,38 +506,33 @@ export default function VSMPreview({
             </>
           )}
 
-          {/* Shipping Box  */}
-          <g transform={`translate(1220, ${MATERIAL_FLOW_Y - 30})`}>
+          {/* Shipping Box - using calculated position */}
+          <g transform={`translate(${shippingBoxX}, ${MATERIAL_FLOW_Y - 30})`}>
             <rect width="120" height="60" fill="white" stroke="black" strokeWidth="2"/>
             <text x="60" y="35" textAnchor="middle" fontSize="14" fontFamily="Arial" fontWeight="bold">
               Shipping
             </text>
           </g>
-           {/* DOWN ARROW: Customer → Shipping (LEFT TO RIGHT, THEN UP) */}
-                    <g transform="translate(1350, 450)">
-                      <path
-                        d="M 0 0 L 100 0 L 100 -180 L 80 -180 L 120 -240 L 160 -180 L 140 -180 L 140 20 L 0 20 Z"
-                        fill="grey"
-                        stroke="black"
-                        strokeWidth="2"
-                      />
-                    </g>
+
+          {/* DOWN ARROW: Customer → Shipping - ALIGNED */}
+          <g transform={`translate(${shippingBoxX + 160}, 450)`}>
+            <path
+              d="M 0 0 L 100 0 L 100 -180 L 80 -180 L 120 -240 L 160 -180 L 140 -180 L 140 20 L 0 20 Z"
+              fill="grey"
+              stroke="black"
+              strokeWidth="2"
+            />
+          </g>
 
           {/* Arrow from last process to Shipping */}
           <g transform={`translate(${300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH + 5}, ${MATERIAL_FLOW_Y})`}>
-            {/* Calculate the distance to shipping box */}
             {(() => {
-              const startX = 300 + (processes.length - 1) * PROCESS_SPACING + PROCESS_WIDTH;
-              const endX = 1215;
-              const distance = endX - startX - 20; 
-              const numBlocks = Math.floor(distance / 18); // 18px spacing per block
+              const distance = 50; // Fixed short distance to shipping
+              const numBlocks = 2;
               
               return (
                 <>
-                  {/* Black bar */}
                   <rect x="0" y="-3" width={distance} height="6" fill="black" />
-                  
-                  {/* White blocks */}
                   {Array.from({ length: numBlocks }).map((_, i) => (
                     <rect 
                       key={i}
@@ -504,8 +545,6 @@ export default function VSMPreview({
                       strokeWidth="1" 
                     />
                   ))}
-                  
-                  {/* Arrow head */}
                   <polygon points={`${distance},-10 ${distance + 20},0 ${distance},10`} fill="black" />
                 </>
               );
@@ -513,8 +552,7 @@ export default function VSMPreview({
           </g>
           
           {/* ========== SECTION 3: LEAD TIME LADDER ========== */}
-          {/* Lead time ladder title */}
-          <text x="800" y="660" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#F97316">
+          <text x={(40 + (shippingBoxX + 600 - 40)) / 2} y="660" textAnchor="middle" fontSize="22" fontFamily="Arial" fontWeight="bold" fill="#F97316">
             Lead time ladder
           </text>
 
@@ -522,7 +560,7 @@ export default function VSMPreview({
           <rect 
             x="40" 
             y="680" 
-            width={Math.max(1520, 250 + processes.length * 140 + 400)} 
+            width={shippingBoxX + 250 + 150 + 50 - 80} 
             height="180" 
             fill="none" 
             stroke="#F97316" 
@@ -535,7 +573,7 @@ export default function VSMPreview({
           <line 
             x1="250" 
             y1="760" 
-            x2={250 + processes.length * 140+100} 
+            x2={250 + processes.length * 140 + 100} 
             y2="760" 
             stroke="black" 
             strokeWidth="2"
@@ -551,29 +589,22 @@ export default function VSMPreview({
             let currentX = 250;
 
             processes.forEach((process, index) => {
-              const leadTimeDays = (parseFloat(process.inventoryAfter) || 0) / (parseInt(customerDemand) || 1);
-              
               const leadTimeWidth = 70;
               const processingWidth = 70;
 
-              // 1. DOWN for inventory/waiting time (lead time)
               pathData += ` L ${currentX} ${downY}`;
               pathData += ` L ${currentX + leadTimeWidth} ${downY}`;
               pathData += ` L ${currentX + leadTimeWidth} ${baselineY}`;
-              
               currentX += leadTimeWidth;
 
-              // 2. UP for processing/value-adding time (cycle time)
               pathData += ` L ${currentX} ${upY}`;
               pathData += ` L ${currentX + processingWidth} ${upY}`;
               pathData += ` L ${currentX + processingWidth} ${baselineY}`;
-              
               currentX += processingWidth;
             });
 
             return (
               <>
-                {/* Main ladder path */}
                 <path 
                   d={pathData}
                   fill="none"
@@ -581,7 +612,6 @@ export default function VSMPreview({
                   strokeWidth="2"
                 />
 
-                {/* Labels and boxes for each process */}
                 {processes.map((process, index) => {
                   const baseX = 250 + index * 140;
                   const leadTimeDays = (parseFloat(process.inventoryAfter) || 0) / (parseInt(customerDemand) || 1);
@@ -589,7 +619,6 @@ export default function VSMPreview({
 
                   return (
                     <g key={`timeline-${process.id}`}>
-                      {/* Lead time label - ON TOP (above baseline) */}
                       <text 
                         x={baseX + 35} 
                         y={upY + 25} 
@@ -600,8 +629,6 @@ export default function VSMPreview({
                       >
                         {leadTimeDays.toFixed(1)} days
                       </text>
-
-                      {/* Cycle time label - ON BOTTOM (below baseline) */}
                       <text 
                         x={baseX + 105} 
                         y={downY - 10} 
@@ -619,9 +646,8 @@ export default function VSMPreview({
             );
           })()}
 
-          {/* Summary box - Production lead time & Processing time */}
+          {/* Summary box */}
           <g transform={`translate(${250 + processes.length * 140 + 100}, ${740})`}>
-            {/* Box background */}
             <rect 
               x="0" 
               y="-30" 
@@ -631,13 +657,9 @@ export default function VSMPreview({
               stroke="black" 
               strokeWidth="2"
             />
-            
-            {/* Production lead time */}
             <text x="150" y="0" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
               Production lead time = {totalLeadTime.toFixed(1)} days
             </text>
-            
-            {/* Processing time */}
             <text x="150" y="30" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
               Processing time = {totalCycleTime} sec
             </text>

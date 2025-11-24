@@ -14,7 +14,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [showProjectPrompt, setShowProjectPrompt] = useState(true)
   const [currentProjectName, setCurrentProjectName] = useState('')
-  const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'preview' | 'analytics'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'preview' | 'ai-analytics' | 'analytics'>('chat')
 
   const {
     chats,
@@ -156,7 +156,17 @@ export default function Page() {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              Preview
+              VSM-Preview
+            </button>
+            <button
+              onClick={() => setActiveTab('ai-analytics')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'ai-analytics'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              AI-Analytics
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -166,7 +176,7 @@ export default function Page() {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              Analytics
+              VSM-Analytics
             </button>
           </div>
         )}
